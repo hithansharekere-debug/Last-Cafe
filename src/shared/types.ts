@@ -96,69 +96,86 @@ export interface NavigationState {
 
 // ─── API Response Types ─────────────────────────────────────────────────
 export interface ErrorResponse {
-  status: 'error';
-  message: string;
+  success: false;
+  error: string;
 }
 
 export interface InitResponse {
-  type: 'init';
-  postId: string;
-  user: User | null;
-  cafe: CafeState;
-  rooms: Room[];
-  canClaimCoffee: boolean;
-
-  // Legacy alias so existing screens keep compiling
-  progress: CafeProgress;
+  success: true;
+  data: {
+    postId: string;
+    user: User | null;
+    cafe: CafeState;
+    rooms: Room[];
+    canClaimCoffee: boolean;
+    progress: CafeProgress;
+  };
 }
 
 export interface ClaimTokenResponse {
   success: boolean;
-  user: User;
-  cafe: CafeState;
-
-  // Legacy aliases
-  tokenCount: number;
-  lastClaimedTimestamp: number;
+  data?: {
+    user: User;
+    cafe: CafeState;
+    tokenCount: number;
+    lastClaimedTimestamp: number;
+  };
+  error?: string;
 }
 
 export interface SpendTokenResponse {
   success: boolean;
-  user: User;
-  contribution: Contribution;
-  cafe: CafeState;
-
-  // Legacy aliases
-  tokenCount: number;
-  progress: CafeProgress;
+  data?: {
+    user: User;
+    contribution: Contribution;
+    cafe: CafeState;
+    tokenCount: number;
+    progress: CafeProgress;
+  };
+  error?: string;
 }
 
 export interface AddContributionResponse {
   success: boolean;
-  contribution: Contribution;
-  cafe: CafeState;
-
-  // Legacy alias
-  progress: CafeProgress;
+  data?: {
+    contribution: Contribution;
+    cafe: CafeState;
+    progress: CafeProgress;
+  };
+  error?: string;
 }
 
 export interface ContributionsListResponse {
-  contributions: Contribution[];
+  success: boolean;
+  data?: {
+    contributions: Contribution[];
+  };
+  error?: string;
 }
 
 export interface UnlockRoomResponse {
   success: boolean;
-  roomId: string;
-  progress: CafeProgress;
+  data?: {
+    roomId: string;
+    progress: CafeProgress;
+  };
+  error?: string;
 }
 
 export interface PuzzleSubmitResponse {
   success: boolean;
-  personalBestTimeMs: number;
-  isNewPersonalBest: boolean;
-  leaderboard: LeaderboardEntry[];
+  data?: {
+    personalBestTimeMs: number;
+    isNewPersonalBest: boolean;
+    leaderboard: LeaderboardEntry[];
+  };
+  error?: string;
 }
 
 export interface LeaderboardResponse {
-  leaderboard: LeaderboardEntry[];
+  success: boolean;
+  data?: {
+    leaderboard: LeaderboardEntry[];
+  };
+  error?: string;
 }

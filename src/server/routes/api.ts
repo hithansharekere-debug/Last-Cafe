@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { context, reddit } from '@devvit/web/server';
-import { RedisService } from '../core/redis';
+import { RedisService, buildUnlockedRooms } from '../core/redis';
 import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES } from '../../shared/constants';
 import type {
   InitResponse,
@@ -14,11 +14,13 @@ import type {
   Contribution,
   CafeState,
   CafeProgress,
+  User,
+  ErrorResponse,
 } from '../../shared/types';
 
 export const api = new Hono();
 
-// ─── Utility ────────────────────────────────────────────────────────────
+// ─── Shared Utilities ───────────────────────────────────────────────────
 
 function getTodayDateString(): string {
   const d = new Date();
@@ -26,31 +28,32 @@ function getTodayDateString(): string {
 }
 
 function buildRoomsList(cafeState: CafeState): Room[] {
+  const unlocked = buildUnlockedRooms(cafeState.totalWarmth);
   return [
     { id: 'foyer', name: 'Foyer', threshold: 0, isUnlocked: true },
     {
       id: 'fireplace',
       name: 'Fireplace Room',
       threshold: ROOM_UNLOCK_THRESHOLDS.FIREPLACE,
-      isUnlocked: cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.FIREPLACE,
+      isUnlocked: unlocked.includes('fireplace'),
     },
     {
       id: 'bookshelf',
       name: 'Library Bookshelf',
       threshold: ROOM_UNLOCK_THRESHOLDS.BOOKSHELF,
-      isUnlocked: cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.BOOKSHELF,
+      isUnlocked: unlocked.includes('bookshelf'),
     },
     {
       id: 'garden',
       name: 'Hidden Garden',
       threshold: ROOM_UNLOCK_THRESHOLDS.GARDEN,
-      isUnlocked: cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.GARDEN,
+      isUnlocked: unlocked.includes('garden'),
     },
     {
       id: 'music_room',
       name: 'Music Conservatory',
       threshold: ROOM_UNLOCK_THRESHOLDS.MUSIC_ROOM,
-      isUnlocked: cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.MUSIC_ROOM,
+      isUnlocked: unlocked.includes('music_room'),
     },
   ];
 }
@@ -64,243 +67,299 @@ function cafeStateToProgress(cafeState: CafeState): CafeProgress {
 }
 
 function generateContributionId(): string {
-  return `c_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+  try {
+    return `c_${crypto.randomUUID()}`;
+  } catch (error) {
+    console.error('Failed to generate UUID via crypto. Using fallback generator.', error);
+    return `c_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 9)}`;
+  }
+}
+
+/**
+ * Helper to identify the current Reddit user from Devvit context.
+ * Gracefully falls back to a temporary anonymous user for local/offline testing.
+ */
+async function getCurrentUser(): Promise<{ userId: string; username: string }> {
+  try {
+    const rawUsername = await reddit.getCurrentUsername();
+    if (rawUsername) {
+      return { userId: rawUsername, username: rawUsername };
+    }
+  } catch (error) {
+    console.warn('Devvit request context username fetch failed:', error);
+  }
+  return { userId: 'local-anon', username: 'Cozy Stranger' };
+}
+
+// ─── Shared Contribution Logic ──────────────────────────────────────────
+
+interface CreateContributionInput {
+  userId: string;
+  username: string;
+  category: string;
+  messageText: string;
+  targetDate?: number;
+}
+
+async function createContribution(
+  input: CreateContributionInput
+): Promise<{ user: User; contribution: Contribution; cafeState: CafeState }> {
+  // 1. Validate Category
+  const validCategories = Object.values(CONTRIBUTION_CATEGORIES) as string[];
+  if (!validCategories.includes(input.category)) {
+    throw new ApiError(400, `Invalid note category: "${input.category}"`);
+  }
+
+  // 2. Validate Message Content
+  const cleanMsg = input.messageText.trim();
+  if (!cleanMsg) {
+    throw new ApiError(400, 'Note message cannot be empty or whitespace only');
+  }
+  if (cleanMsg.length > 250) {
+    throw new ApiError(400, `Note message exceeds maximum limit of 250 characters (got ${cleanMsg.length})`);
+  }
+
+  const user = await RedisService.getUser(input.userId);
+  if (!user) {
+    throw new ApiError(404, `User profile not found for ID "${input.userId}"`);
+  }
+
+  // 3. Prevent Negative Token Count
+  if (user.currentCoffeeTokens < 1) {
+    throw new ApiError(403, 'Insufficient coffee tokens available to complete this action');
+  }
+
+  // Deduct token, increment user stats
+  const warmth = 1;
+  user.currentCoffeeTokens = Math.max(user.currentCoffeeTokens - 1, 0);
+  user.totalNotesWritten += 1;
+  user.totalWarmthContributed += warmth;
+
+  // Build contribution
+  const now = Math.floor(Date.now() / 1000);
+  const category = input.category as Contribution['category'];
+  const isTimeCapsule = category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE;
+  const isUnlocked = isTimeCapsule
+    ? (input.targetDate ? now >= input.targetDate : true)
+    : true;
+
+  const contribution: Contribution = {
+    id: generateContributionId(),
+    authorId: input.userId,
+    username: input.username,
+    category,
+    message: cleanMsg,
+    createdAt: now,
+    warmthGiven: warmth,
+    likes: 0,
+    isUnlocked,
+    // Legacy aliases
+    userId: input.userId,
+    text: cleanMsg,
+    timestamp: now,
+  };
+
+  if (isTimeCapsule && input.targetDate !== undefined) {
+    contribution.targetDate = input.targetDate;
+  }
+
+  // Persist contribution
+  await RedisService.saveContribution(contribution);
+
+  // Update global cafe state (also auto-unlocks rooms)
+  const cafeState = await RedisService.incrementNotes(warmth);
+
+  // Sync user's unlocked rooms and save
+  user.unlockedRooms = cafeState.roomsUnlocked;
+  await RedisService.saveUser(user);
+
+  return { user, contribution, cafeState };
+}
+
+class ApiError extends Error {
+  constructor(public readonly statusCode: number, message: string) {
+    super(message);
+  }
 }
 
 // ═════════════════════════════════════════════════════════════════════════
 // GET /api/init
-// Returns: user profile, cafe state, rooms, canClaimCoffee
 // ═════════════════════════════════════════════════════════════════════════
 api.get('/init', async (c) => {
   const { postId } = context;
   if (!postId) {
-    return c.json({ status: 'error', message: 'postId not found in context' }, 400);
+    console.error('Init failure: postId missing in context');
+    return c.json<ErrorResponse>({ success: false, error: 'postId not found in context' }, 400);
   }
 
   try {
-    const rawUsername = await reddit.getCurrentUsername();
-    const username = rawUsername ?? 'anonymous';
+    const { userId, username } = await getCurrentUser();
 
     // Fetch or auto-create user
-    const user = rawUsername
-      ? await RedisService.getOrCreateUser(username, username)
-      : null;
+    const user = await RedisService.getOrCreateUser(userId, username);
 
     // Fetch cafe state
     const cafeState = await RedisService.getCafeState();
 
-    // Build rooms list from warmth
+    // Build rooms list
     const rooms = buildRoomsList(cafeState);
 
     // Check if coffee can be claimed
     const todayStr = getTodayDateString();
-    const canClaimCoffee = user
-      ? await RedisService.canClaimCoffee(user.id, todayStr)
-      : false;
+    const canClaimCoffee = await RedisService.canClaimCoffee(user.id, todayStr);
 
     // Update user's unlocked rooms to reflect latest state
-    if (user) {
-      user.unlockedRooms = cafeState.roomsUnlocked;
-      await RedisService.saveUser(user);
-    }
+    user.unlockedRooms = cafeState.roomsUnlocked;
+    await RedisService.saveUser(user);
 
     return c.json<InitResponse>({
-      type: 'init',
-      postId,
-      user,
-      cafe: cafeState,
-      rooms,
-      canClaimCoffee,
-      progress: cafeStateToProgress(cafeState),
+      success: true,
+      data: {
+        postId,
+        user,
+        cafe: cafeState,
+        rooms,
+        canClaimCoffee,
+        progress: cafeStateToProgress(cafeState),
+      },
     });
   } catch (error) {
-    console.error('Init error:', error);
-    return c.json({ status: 'error', message: 'Failed to init app' }, 500);
+    console.error('Init server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to initialize application' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
 // POST /api/claim
-// Claims today's Coffee Token.
 // ═════════════════════════════════════════════════════════════════════════
 api.post('/claim', async (c) => {
   try {
-    const rawUsername = await reddit.getCurrentUsername();
-    if (!rawUsername) {
-      return c.json({ status: 'error', message: 'Not logged in' }, 401);
-    }
-
+    const { userId } = await getCurrentUser();
     const todayStr = getTodayDateString();
-    const result = await RedisService.claimDailyCoffee(rawUsername, todayStr);
+    const result = await RedisService.claimDailyCoffee(userId, todayStr);
     const cafeState = await RedisService.getCafeState();
 
+    if (!result.success) {
+      return c.json<ClaimTokenResponse>({
+        success: false,
+        error: 'You have already brewed your daily coffee today. Please wait for the cooldown.',
+      }, 400);
+    }
+
     return c.json<ClaimTokenResponse>({
-      success: result.success,
-      user: result.user,
-      cafe: cafeState,
-      tokenCount: result.user.currentCoffeeTokens,
-      lastClaimedTimestamp: result.user.lastCoffeeClaim ?? 0,
+      success: true,
+      data: {
+        user: result.user,
+        cafe: cafeState,
+        tokenCount: result.user.currentCoffeeTokens,
+        lastClaimedTimestamp: result.user.lastCoffeeClaim ?? 0,
+      },
     });
   } catch (error) {
-    console.error('Claim error:', error);
-    return c.json({ status: 'error', message: 'Claim failed' }, 500);
+    console.error('Claim server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to claim daily coffee token' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
 // POST /api/contribution
-// Stores a new contribution (costs 1 coffee token).
 // ═════════════════════════════════════════════════════════════════════════
 api.post('/contribution', async (c) => {
   try {
-    const rawUsername = await reddit.getCurrentUsername();
-    if (!rawUsername) {
-      return c.json({ status: 'error', message: 'Not logged in' }, 401);
+    const { userId, username } = await getCurrentUser();
+
+    // Body structure check
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON request body' }, 400);
     }
 
-    const body = await c.req.json<{ category: string; message: string; targetDate?: number }>();
-    if (!body.message || !body.category) {
-      return c.json({ status: 'error', message: 'Missing message or category' }, 400);
+    if (!body || typeof body !== 'object') {
+      return c.json<ErrorResponse>({ success: false, error: 'Request body must be a valid JSON object' }, 400);
     }
 
-    const user = await RedisService.getUser(rawUsername);
-    if (!user || user.currentCoffeeTokens < 1) {
-      return c.json({ status: 'error', message: 'Insufficient coffee tokens' }, 403);
+    if (body.message === undefined || body.category === undefined) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters: message and category' }, 400);
     }
 
-    // Deduct token, increment user stats
-    const warmth = 1;
-    user.currentCoffeeTokens -= 1;
-    user.totalNotesWritten += 1;
-    user.totalWarmthContributed += warmth;
-    await RedisService.saveUser(user);
-
-    // Build contribution
-    const now = Math.floor(Date.now() / 1000);
-    const category = body.category as Contribution['category'];
-    const isTimeCapsule = category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE;
-    const isUnlocked = isTimeCapsule
-      ? (body.targetDate ? now >= body.targetDate : true)
-      : true;
-
-    const contribution: Contribution = {
-      id: generateContributionId(),
-      authorId: rawUsername,
-      username: rawUsername,
-      category,
-      message: body.message,
-      createdAt: now,
-      warmthGiven: warmth,
-      likes: 0,
-      isUnlocked,
-      // Legacy aliases
-      userId: rawUsername,
-      text: body.message,
-      timestamp: now,
-    };
-
-    if (isTimeCapsule && body.targetDate !== undefined) {
-      contribution.targetDate = body.targetDate;
-    }
-
-    await RedisService.saveContribution(contribution);
-
-    // Update global cafe state
-    const cafeState = await RedisService.incrementNotes(warmth);
-
-    // Update user's unlocked rooms
-    user.unlockedRooms = cafeState.roomsUnlocked;
-    await RedisService.saveUser(user);
+    const result = await createContribution({
+      userId,
+      username,
+      category: String(body.category),
+      messageText: String(body.message),
+      targetDate: body.targetDate !== undefined ? Number(body.targetDate) : undefined,
+    });
 
     return c.json<AddContributionResponse>({
       success: true,
-      contribution,
-      cafe: cafeState,
-      progress: cafeStateToProgress(cafeState),
+      data: {
+        contribution: result.contribution,
+        cafe: result.cafeState,
+        progress: cafeStateToProgress(result.cafeState),
+      },
     });
   } catch (error) {
-    console.error('Contribution error:', error);
-    return c.json({ status: 'error', message: 'Failed to save contribution' }, 500);
+    if (error instanceof ApiError) {
+      return c.json<ErrorResponse>({ success: false, error: error.message }, error.statusCode as any);
+    }
+    console.error('Contribution endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'An unexpected error occurred while placing note' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
-// POST /api/spend (legacy alias for /api/contribution)
+// POST /api/spend (legacy alias)
 // ═════════════════════════════════════════════════════════════════════════
 api.post('/spend', async (c) => {
   try {
-    const rawUsername = await reddit.getCurrentUsername();
-    if (!rawUsername) {
-      return c.json({ status: 'error', message: 'Not logged in' }, 401);
+    const { userId, username } = await getCurrentUser();
+
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON request body' }, 400);
     }
 
-    const body = await c.req.json<{ category: string; text: string; targetDate?: number }>();
-    if (!body.text || !body.category) {
-      return c.json({ status: 'error', message: 'Missing text or category' }, 400);
+    if (!body || typeof body !== 'object') {
+      return c.json<ErrorResponse>({ success: false, error: 'Request body must be a valid JSON object' }, 400);
     }
 
-    const user = await RedisService.getUser(rawUsername);
-    if (!user || user.currentCoffeeTokens < 1) {
-      return c.json({ status: 'error', message: 'Insufficient coffee tokens' }, 403);
+    if (body.text === undefined || body.category === undefined) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters: text and category' }, 400);
     }
 
-    // Deduct token, increment user stats
-    const warmth = 1;
-    user.currentCoffeeTokens -= 1;
-    user.totalNotesWritten += 1;
-    user.totalWarmthContributed += warmth;
-    await RedisService.saveUser(user);
-
-    // Build contribution
-    const now = Math.floor(Date.now() / 1000);
-    const category = body.category as Contribution['category'];
-    const isTimeCapsule = category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE;
-    const isUnlocked = isTimeCapsule
-      ? (body.targetDate ? now >= body.targetDate : true)
-      : true;
-
-    const contribution: Contribution = {
-      id: generateContributionId(),
-      authorId: rawUsername,
-      username: rawUsername,
-      category,
-      message: body.text,
-      createdAt: now,
-      warmthGiven: warmth,
-      likes: 0,
-      isUnlocked,
-      // Legacy aliases
-      userId: rawUsername,
-      text: body.text,
-      timestamp: now,
-    };
-
-    if (isTimeCapsule && body.targetDate !== undefined) {
-      contribution.targetDate = body.targetDate;
-    }
-
-    await RedisService.saveContribution(contribution);
-
-    // Update global cafe state
-    const cafeState = await RedisService.incrementNotes(warmth);
+    const result = await createContribution({
+      userId,
+      username,
+      category: String(body.category),
+      messageText: String(body.text),
+      targetDate: body.targetDate !== undefined ? Number(body.targetDate) : undefined,
+    });
 
     return c.json<SpendTokenResponse>({
       success: true,
-      user,
-      contribution,
-      cafe: cafeState,
-      tokenCount: user.currentCoffeeTokens,
-      progress: cafeStateToProgress(cafeState),
+      data: {
+        user: result.user,
+        contribution: result.contribution,
+        cafe: result.cafeState,
+        tokenCount: result.user.currentCoffeeTokens,
+        progress: cafeStateToProgress(result.cafeState),
+      },
     });
   } catch (error) {
-    console.error('Spend error:', error);
-    return c.json({ status: 'error', message: 'Failed to spend token' }, 500);
+    if (error instanceof ApiError) {
+      return c.json<ErrorResponse>({ success: false, error: error.message }, error.statusCode as any);
+    }
+    console.error('Spend legacy endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'An unexpected error occurred while spending token' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
 // GET /api/contributions
-// Returns recent contributions (supports ?category= filter).
 // ═════════════════════════════════════════════════════════════════════════
 api.get('/contributions', async (c) => {
   try {
@@ -308,6 +367,10 @@ api.get('/contributions', async (c) => {
     let list: Contribution[];
 
     if (categoryFilter && categoryFilter !== 'All') {
+      const validCategories = Object.values(CONTRIBUTION_CATEGORIES) as string[];
+      if (!validCategories.includes(categoryFilter)) {
+        return c.json<ErrorResponse>({ success: false, error: `Invalid category filter: "${categoryFilter}"` }, 400);
+      }
       list = await RedisService.getContributionsByCategory(categoryFilter, 50);
     } else {
       list = await RedisService.getRecentContributions(50);
@@ -322,60 +385,74 @@ api.get('/contributions', async (c) => {
       return true;
     });
 
-    return c.json<ContributionsListResponse>({ contributions: filtered });
+    return c.json<ContributionsListResponse>({
+      success: true,
+      data: {
+        contributions: filtered,
+      },
+    });
   } catch (error) {
-    console.error('Fetch contributions error:', error);
-    return c.json({ status: 'error', message: 'Failed to fetch contributions' }, 500);
+    console.error('Fetch contributions endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch contributions' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
 // GET /api/contribution/random
-// Returns one random contribution.
 // ═════════════════════════════════════════════════════════════════════════
 api.get('/contribution/random', async (c) => {
   try {
     const contrib = await RedisService.getRandomContribution();
     if (!contrib) {
-      return c.json({ status: 'error', message: 'No contributions found' }, 404);
+      return c.json<ErrorResponse>({ success: false, error: 'No contributions found in the cafe yet' }, 404);
     }
-    return c.json({ contribution: contrib });
+    return c.json({
+      success: true,
+      data: {
+        contribution: contrib,
+      },
+    });
   } catch (error) {
-    console.error('Random contribution error:', error);
-    return c.json({ status: 'error', message: 'Failed to fetch random contribution' }, 500);
+    console.error('Random contribution endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch random contribution' }, 500);
   }
 });
 
 // ═════════════════════════════════════════════════════════════════════════
-// Puzzle endpoints (unchanged logic, kept for completeness)
+// Puzzle endpoints
 // ═════════════════════════════════════════════════════════════════════════
 
 api.post('/puzzle/submit', async (c) => {
   try {
-    const rawUsername = await reddit.getCurrentUsername();
-    if (!rawUsername) {
-      return c.json({ status: 'error', message: 'Not logged in' }, 401);
+    const { userId, username } = await getCurrentUser();
+
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON request body' }, 400);
     }
 
-    const body = await c.req.json<{ puzzleId: string; timeMs: number }>();
-    if (!body.puzzleId || !body.timeMs) {
-      return c.json({ status: 'error', message: 'Missing puzzleId or timeMs' }, 400);
+    if (!body || typeof body !== 'object') {
+      return c.json<ErrorResponse>({ success: false, error: 'Request body must be a valid JSON object' }, 400);
+    }
+
+    if (body.puzzleId === undefined || body.timeMs === undefined) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters: puzzleId and timeMs' }, 400);
     }
 
     const todayStr = getTodayDateString();
 
-    await RedisService.submitPuzzleScore(body.puzzleId, todayStr, rawUsername, body.timeMs);
+    await RedisService.submitPuzzleScore(body.puzzleId, todayStr, username, Number(body.timeMs));
 
-    const existingPB = await RedisService.getPersonalBest(rawUsername, body.puzzleId);
+    const existingPB = await RedisService.getPersonalBest(userId, body.puzzleId);
     let isNewPersonalBest = false;
-    let pbTime = body.timeMs;
+    let pbTime = Number(body.timeMs);
 
-    if (existingPB === null || body.timeMs < existingPB) {
+    if (existingPB === null || Number(body.timeMs) < existingPB) {
       isNewPersonalBest = true;
-      await RedisService.savePersonalBest(rawUsername, body.puzzleId, body.timeMs);
-
-      // Also update user's puzzleHighScore
-      await RedisService.updateUser(rawUsername, { puzzleHighScore: body.timeMs });
+      await RedisService.savePersonalBest(userId, body.puzzleId, Number(body.timeMs));
+      await RedisService.updateUser(userId, { puzzleHighScore: Number(body.timeMs) });
     } else {
       pbTime = existingPB;
     }
@@ -384,13 +461,15 @@ api.post('/puzzle/submit', async (c) => {
 
     return c.json<PuzzleSubmitResponse>({
       success: true,
-      personalBestTimeMs: pbTime,
-      isNewPersonalBest,
-      leaderboard,
+      data: {
+        personalBestTimeMs: pbTime,
+        isNewPersonalBest,
+        leaderboard,
+      },
     });
   } catch (error) {
-    console.error('Puzzle submit error:', error);
-    return c.json({ status: 'error', message: 'Failed to submit puzzle score' }, 500);
+    console.error('Puzzle submit endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to submit puzzle score' }, 500);
   }
 });
 
@@ -400,9 +479,14 @@ api.get('/puzzle/leaderboard', async (c) => {
     const dateStr = c.req.query('date') ?? getTodayDateString();
 
     const leaderboard = await RedisService.getPuzzleLeaderboard(puzzleId, dateStr, 10);
-    return c.json<LeaderboardResponse>({ leaderboard });
+    return c.json<LeaderboardResponse>({
+      success: true,
+      data: {
+        leaderboard,
+      },
+    });
   } catch (error) {
-    console.error('Fetch leaderboard error:', error);
-    return c.json({ status: 'error', message: 'Failed to fetch leaderboard' }, 500);
+    console.error('Fetch leaderboard endpoint failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch leaderboard data' }, 500);
   }
 });

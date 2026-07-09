@@ -137,12 +137,12 @@ const DiscoverCard = ({ contribution }: { contribution: Contribution }) => {
             {contribution.category}
           </span>
           <span className="font-mono text-[10px] text-[#5e463a]">
-            {formatRelativeTime(contribution.timestamp)}
+            {formatRelativeTime(contribution.createdAt || contribution.timestamp)}
           </span>
         </div>
 
         <p className="font-handwritten text-sm text-[#26140b] leading-relaxed">
-          "{contribution.text}"
+          "{contribution.message || contribution.text}"
         </p>
 
         {contribution.category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && contribution.targetDate !== undefined && (
@@ -151,9 +151,13 @@ const DiscoverCard = ({ contribution }: { contribution: Contribution }) => {
           </p>
         )}
 
-        <p className="font-serif text-[10px] text-[#5e463a] italic border-t border-dashed border-[#c8a285] pt-2 mt-1">
-          — {contribution.username}
-        </p>
+        <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#c8a285] text-[10px] text-[#5e463a] font-serif">
+          <span className="italic">— {contribution.username}</span>
+          <div className="flex items-center gap-2 font-mono">
+            <span>🔥 {contribution.warmthGiven || 1}</span>
+            <span>❤️ {contribution.likes || 0}</span>
+          </div>
+        </div>
       </div>
     </Card>
   );

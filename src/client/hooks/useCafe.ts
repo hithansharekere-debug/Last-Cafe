@@ -10,7 +10,9 @@ import type {
   ClaimTokenResponse,
   SpendTokenResponse,
   AddContributionResponse,
+  ContributionsListResponse,
   PuzzleSubmitResponse,
+  LeaderboardResponse,
 } from '../../shared/types';
 
 export const useCafe = () => {
@@ -44,13 +46,26 @@ export const useCafe = () => {
     try {
       const res = await fetch('/api/init');
       if (!res.ok) throw new Error(`Init failed with status ${res.status}`);
-      const data: InitResponse = await res.json();
+      const resData: InitResponse = await res.json();
 
-      setUser(data.user);
-      setCafe(data.cafe);
-      setProgress(data.progress);
-      setRooms(data.rooms);
-      setCanClaimCoffee(data.canClaimCoffee);
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        setCafe(resData.data.cafe);
+        setProgress(resData.data.progress);
+        setRooms(resData.data.rooms);
+        setCanClaimCoffee(resData.data.canClaimCoffee);
+      } else {
+        throw new Error('Server initialized state successfully but returned no data');
+      }
+
+      // Fetch latest contributions to sync state
+      const contribsRes = await fetch('/api/contributions');
+      if (contribsRes.ok) {
+        const contribsData: ContributionsListResponse = await contribsRes.json();
+        if (contribsData.success && contribsData.data) {
+          setContributions(contribsData.data.contributions || []);
+        }
+      }
     } catch (err) {
       console.error('Failed to init cafe:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
@@ -80,6 +95,36 @@ export const useCafe = () => {
         { id: 'garden', name: 'Hidden Garden', threshold: 500, isUnlocked: false },
         { id: 'music_room', name: 'Music Conservatory', threshold: 1000, isUnlocked: false },
       ]);
+      setContributions([
+        {
+          id: 'm1',
+          authorId: 'user1',
+          username: 'EspressoLover',
+          category: 'Memory',
+          message: 'This place reminds me of a little basement library I visited in Paris. Smelled of rain and yellowed books.',
+          createdAt: Math.floor(Date.now() / 1000) - 3600,
+          warmthGiven: 1,
+          likes: 3,
+          isUnlocked: true,
+          userId: 'user1',
+          text: 'This place reminds me of a little basement library I visited in Paris. Smelled of rain and yellowed books.',
+          timestamp: Math.floor(Date.now() / 1000) - 3600,
+        },
+        {
+          id: 'm2',
+          authorId: 'user2',
+          username: 'OldSoul',
+          category: 'Advice',
+          message: 'Drink your coffee slow. The world moves too fast outside these wooden walls anyway.',
+          createdAt: Math.floor(Date.now() / 1000) - 7200,
+          warmthGiven: 1,
+          likes: 5,
+          isUnlocked: true,
+          userId: 'user2',
+          text: 'Drink your coffee slow. The world moves too fast outside these wooden walls anyway.',
+          timestamp: Math.floor(Date.now() / 1000) - 7200,
+        },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -98,11 +143,11 @@ export const useCafe = () => {
     try {
       const res = await fetch('/api/claim', { method: 'POST' });
       if (!res.ok) throw new Error(`Claim endpoint error ${res.status}`);
-      const data: ClaimTokenResponse = await res.json();
+      const resData: ClaimTokenResponse = await res.json();
 
-      if (data.success) {
-        setUser(data.user);
-        setCafe(data.cafe);
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        setCafe(resData.data.cafe);
         setCanClaimCoffee(false);
         return true;
       }
@@ -130,7 +175,7 @@ export const useCafe = () => {
   const claimDailyToken = claimCoffee;
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 3. Add contribution (new primary method)
+  // 3. Add contribution
   // ═══════════════════════════════════════════════════════════════════════
   const addContribution = async (category: string, message: string, targetDate?: number): Promise<boolean> => {
     if (!user || user.currentCoffeeTokens < 1) {
@@ -145,12 +190,12 @@ export const useCafe = () => {
         body: JSON.stringify({ category, message, targetDate }),
       });
       if (!res.ok) throw new Error(`Contribution error ${res.status}`);
-      const data: AddContributionResponse = await res.json();
+      const resData: AddContributionResponse = await res.json();
 
-      if (data.success) {
-        setCafe(data.cafe);
-        setProgress(data.progress);
-        setContributions((prev) => [data.contribution, ...prev]);
+      if (resData.success && resData.data) {
+        setCafe(resData.data.cafe);
+        setProgress(resData.data.progress);
+        setContributions((prev) => [resData.data!.contribution, ...prev]);
 
         // Refresh user to get updated token count
         await refresh();
@@ -164,7 +209,7 @@ export const useCafe = () => {
   };
 
   // ═══════════════════════════════════════════════════════════════════════
-  // 4. Spend token (legacy — delegates to /api/spend)
+  // 4. Spend token (legacy)
   // ═══════════════════════════════════════════════════════════════════════
   const spendToken = async (category: string, text: string, targetDate?: number): Promise<boolean> => {
     if (!user || user.currentCoffeeTokens < 1) {
@@ -179,22 +224,22 @@ export const useCafe = () => {
         body: JSON.stringify({ category, text, targetDate }),
       });
       if (!res.ok) throw new Error(`Spend token error ${res.status}`);
-      const data: SpendTokenResponse = await res.json();
+      const resData: SpendTokenResponse = await res.json();
 
-      if (data.success) {
-        setUser(data.user);
-        setCafe(data.cafe);
-        setProgress(data.progress);
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        setCafe(resData.data.cafe);
+        setProgress(resData.data.progress);
 
         // Update rooms locally
         setRooms((prevRooms) =>
           prevRooms.map((r) => ({
             ...r,
-            isUnlocked: data.cafe.totalWarmth >= r.threshold,
+            isUnlocked: resData.data!.cafe.totalWarmth >= r.threshold,
           }))
         );
 
-        setContributions((prev) => [data.contribution, ...prev]);
+        setContributions((prev) => [resData.data!.contribution, ...prev]);
         return true;
       }
       return false;
@@ -247,8 +292,10 @@ export const useCafe = () => {
           : `/api/contributions?category=${encodeURIComponent(category)}`;
       const res = await fetch(url);
       if (!res.ok) throw new Error(`Failed to fetch contributions ${res.status}`);
-      const data = await res.json() as { contributions: Contribution[] };
-      setContributions(data.contributions || []);
+      const resData: ContributionsListResponse = await res.json();
+      if (resData.success && resData.data) {
+        setContributions(resData.data.contributions || []);
+      }
     } catch (err) {
       console.error('Failed to fetch contributions:', err);
       // Mock data for offline testing
@@ -312,11 +359,11 @@ export const useCafe = () => {
         body: JSON.stringify({ puzzleId, timeMs }),
       });
       if (!res.ok) throw new Error(`Submit score error ${res.status}`);
-      const data: PuzzleSubmitResponse = await res.json();
+      const resData: PuzzleSubmitResponse = await res.json();
 
-      if (data.success) {
-        setPbTimeMs(data.personalBestTimeMs);
-        setPuzzleLeaderboard(data.leaderboard);
+      if (resData.success && resData.data) {
+        setPbTimeMs(resData.data.personalBestTimeMs);
+        setPuzzleLeaderboard(resData.data.leaderboard);
         return true;
       }
       return false;
@@ -346,8 +393,10 @@ export const useCafe = () => {
     try {
       const res = await fetch(`/api/puzzle/leaderboard?puzzleId=${puzzleId}`);
       if (!res.ok) throw new Error(`Leaderboard fetch error ${res.status}`);
-      const data = await res.json() as { leaderboard: LeaderboardEntry[] };
-      setPuzzleLeaderboard(data.leaderboard || []);
+      const resData: LeaderboardResponse = await res.json();
+      if (resData.success && resData.data) {
+        setPuzzleLeaderboard(resData.data.leaderboard || []);
+      }
     } catch (err) {
       console.error('Failed to fetch leaderboard:', err);
       setPuzzleLeaderboard([
@@ -359,7 +408,6 @@ export const useCafe = () => {
   }, []);
 
   return {
-    // State
     user,
     cafe,
     progress,
@@ -370,16 +418,12 @@ export const useCafe = () => {
     loading,
     canClaimCoffee,
     error,
-
-    // Actions
     refresh,
     claimCoffee,
     addContribution,
     fetchContributions,
     submitPuzzleScore,
     fetchPuzzleLeaderboard,
-
-    // Legacy aliases (used by existing screens)
     refreshState: refresh,
     claimDailyToken,
     spendToken,

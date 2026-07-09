@@ -20,26 +20,23 @@ const AppContent = () => {
   const { currentScreen } = useNavigation();
   const {
     user,
+    cafe,
     progress,
     rooms,
     contributions,
     puzzleLeaderboard,
     pbTimeMs,
     loading,
-    claimDailyToken,
-    spendToken,
+    claimCoffee,
+    addContribution,
     fetchContributions,
     submitPuzzleScore: _submitPuzzleScore,
     fetchPuzzleLeaderboard,
+    canClaimCoffee,
   } = useCafe();
 
   // Check if token was already claimed today (based on lastClaimedTimestamp)
-  const hasClaimedToday = (() => {
-    if (!user?.lastClaimedTimestamp) return false;
-    const today = new Date().toISOString().split('T')[0] ?? '';
-    const claimedDate = new Date(user.lastClaimedTimestamp * 1000).toISOString().split('T')[0] ?? '';
-    return today === claimedDate;
-  })();
+  const hasClaimedToday = !canClaimCoffee;
 
   if (loading) {
     return (
@@ -57,16 +54,18 @@ const AppContent = () => {
         return (
           <CafeScreen
             user={user}
+            cafe={cafe}
             progress={progress}
             rooms={rooms}
-            onSpendToken={spendToken}
-            onClaimToken={claimDailyToken}
+            contributions={contributions}
+            canClaimCoffee={canClaimCoffee}
+            onSpendToken={addContribution}
+            onClaimToken={claimCoffee}
           />
         );
       case 'table':
         return (
           <CommunityTableScreen
-            user={user}
             contributions={contributions}
             loading={false}
             onFetchContributions={() => { void fetchContributions('All'); }}
@@ -98,8 +97,8 @@ const AppContent = () => {
   return (
     <div className="app-frame animate-fade-in">
       <Header
-        tokenCount={user?.tokenCount ?? 0}
-        onClaimToken={claimDailyToken}
+        tokenCount={user?.currentCoffeeTokens ?? 0}
+        onClaimToken={claimCoffee}
         hasClaimedToday={hasClaimedToday}
       />
       <main className="flex-1 overflow-hidden flex flex-col">

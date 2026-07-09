@@ -7,39 +7,20 @@ import type { User, Contribution, CafeState, LeaderboardEntry } from '../../shar
  * All keys are namespaced under "cafe:" to prevent collisions.
  */
 export const RedisKeys = {
-  // User profile (JSON string)
   user: (userId: string) => `cafe:user:${userId}`,
-
-  // Daily claim flag with TTL (string "true")
   dailyClaim: (userId: string, dateStr: string) => `cafe:claim:${userId}:${dateStr}`,
-
-  // Single contribution record (JSON string)
   contribution: (id: string) => `cafe:contrib:${id}`,
-
-  // Global cafe state (JSON string)
   cafeState: () => `cafe:state`,
-
-  // Sorted set of all contribution IDs by timestamp
   contributionsList: () => `cafe:contributions:list`,
-
-  // Sorted set of contribution IDs by category
   contributionsByCategory: (category: string) => `cafe:contributions:cat:${category}`,
-
-  // Puzzle daily leaderboard (sorted set by timeMs)
   puzzleLeaderboard: (puzzleId: string, dateStr: string) => `cafe:puzzle:lead:${puzzleId}:${dateStr}`,
-
-  // Personal best times (JSON map of puzzleId → timeMs)
   personalBest: (userId: string) => `cafe:puzzle:pb:${userId}`,
-
-  // Time capsules sorted set (by unlock timestamp)
   timeCapsules: () => `cafe:timecapsules:all`,
-
-  // Legacy alias
   progress: () => `cafe:state`,
 } as const;
 
 // ─── Helper: build rooms list from warmth ────────────────────────────────
-function buildUnlockedRooms(totalWarmth: number): string[] {
+export function buildUnlockedRooms(totalWarmth: number): string[] {
   const rooms: string[] = ['foyer'];
   if (totalWarmth >= ROOM_UNLOCK_THRESHOLDS.FIREPLACE) rooms.push('fireplace');
   if (totalWarmth >= ROOM_UNLOCK_THRESHOLDS.BOOKSHELF) rooms.push('bookshelf');
@@ -63,8 +44,6 @@ function createDefaultUser(userId: string, username: string): User {
     totalWarmthContributed: 0,
     unlockedRooms: ['foyer'],
     puzzleHighScore: null,
-
-    // Legacy aliases
     joinedDate: now,
     tokenCount: 1,
     contributionCount: 0,
@@ -97,103 +76,126 @@ function safeParse<T>(raw: string | undefined | null, fallback: T): T {
   if (!raw) return fallback;
   try {
     return JSON.parse(raw) as T;
-  } catch {
+  } catch (error) {
+    console.error('JSON parsing failed. Raw data:', raw, error);
     return fallback;
   }
 }
 
 /**
- * Centralized Redis Service.
- * All Redis access goes through this object.
+ * Hardened Centralized Redis Service with try/catch handlers on every method
+ * to prevent Redis network or node failures from crashing the Devvit application.
  */
 export const RedisService = {
   // ═══════════════════════════════════════════════════════════════════════
   // USER METHODS
   // ═══════════════════════════════════════════════════════════════════════
 
-  /** Fetch a user by ID. Returns null if not found. */
   async getUser(userId: string): Promise<User | null> {
-    const raw = await redis.get(RedisKeys.user(userId));
-    if (!raw) return null;
-    const user = safeParse<User | null>(raw, null);
-    return user ? syncUserLegacy(user) : null;
-  },
-
-  /** Fetch an existing user or create a new one automatically. */
-  async getOrCreateUser(userId: string, username: string): Promise<User> {
-    let user = await this.getUser(userId);
-    if (!user) {
-      user = createDefaultUser(userId, username);
-      await this.saveUser(user);
-
-      // Increment global visitor count
-      await this.incrementVisitors();
-    } else {
-      // Update visit tracking
-      user.lastVisit = Math.floor(Date.now() / 1000);
-      user.visitCount += 1;
-      await this.saveUser(user);
+    try {
+      const raw = await redis.get(RedisKeys.user(userId));
+      if (!raw) return null;
+      const user = safeParse<User | null>(raw, null);
+      return user ? syncUserLegacy(user) : null;
+    } catch (error) {
+      console.error(`Redis failure in getUser for user "${userId}":`, error);
+      return null;
     }
-    return syncUserLegacy(user);
   },
 
-  /** Persist a user to Redis. */
+  async getOrCreateUser(userId: string, username: string): Promise<User> {
+    try {
+      let user = await this.getUser(userId);
+      if (!user) {
+        user = createDefaultUser(userId, username);
+        await this.saveUser(user);
+        await this.incrementVisitors();
+      } else {
+        user.lastVisit = Math.floor(Date.now() / 1000);
+        user.visitCount += 1;
+        await this.saveUser(user);
+      }
+      return syncUserLegacy(user);
+    } catch (error) {
+      console.error(`Redis failure in getOrCreateUser for user "${userId}":`, error);
+      return createDefaultUser(userId, username);
+    }
+  },
+
   async saveUser(user: User): Promise<void> {
-    const synced = syncUserLegacy(user);
-    await redis.set(RedisKeys.user(synced.id), JSON.stringify(synced));
+    try {
+      const synced = syncUserLegacy(user);
+      await redis.set(RedisKeys.user(synced.id), JSON.stringify(synced));
+    } catch (error) {
+      console.error(`Redis failure in saveUser for user "${user.id}":`, error);
+    }
   },
 
-  /** Update specific fields on a user. */
   async updateUser(userId: string, updates: Partial<Omit<User, 'id' | 'username'>>): Promise<User | null> {
-    const user = await this.getUser(userId);
-    if (!user) return null;
-    Object.assign(user, updates);
-    await this.saveUser(user);
-    return syncUserLegacy(user);
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return null;
+      Object.assign(user, updates);
+      await this.saveUser(user);
+      return syncUserLegacy(user);
+    } catch (error) {
+      console.error(`Redis failure in updateUser for user "${userId}":`, error);
+      return null;
+    }
   },
 
   // ═══════════════════════════════════════════════════════════════════════
   // DAILY COFFEE TOKEN
   // ═══════════════════════════════════════════════════════════════════════
 
-  /** Check whether the user can claim today's coffee. */
   async canClaimCoffee(userId: string, dateStr: string): Promise<boolean> {
-    const claimed = await redis.get(RedisKeys.dailyClaim(userId, dateStr));
-    return claimed !== 'true';
+    try {
+      const claimed = await redis.get(RedisKeys.dailyClaim(userId, dateStr));
+      return claimed !== 'true';
+    } catch (error) {
+      console.error(`Redis failure in canClaimCoffee for user "${userId}":`, error);
+      return false; // Fallback to safe mode (prevent claim exploitation)
+    }
   },
 
-  /** Mark today's coffee as claimed (TTL to midnight UTC). */
   async setClaimedToday(userId: string, dateStr: string): Promise<void> {
-    const msToMidnight = new Date().setUTCHours(24, 0, 0, 0) - Date.now();
-    const ttlSeconds = Math.max(Math.floor(msToMidnight / 1000), 60);
-    await redis.set(RedisKeys.dailyClaim(userId, dateStr), 'true', {
-      expiration: new Date(Date.now() + ttlSeconds * 1000),
-    });
+    try {
+      const msToMidnight = new Date().setUTCHours(24, 0, 0, 0) - Date.now();
+      const ttlSeconds = Math.max(Math.floor(msToMidnight / 1000), 60);
+      await redis.set(RedisKeys.dailyClaim(userId, dateStr), 'true', {
+        expiration: new Date(Date.now() + ttlSeconds * 1000),
+      });
+    } catch (error) {
+      console.error(`Redis failure in setClaimedToday for user "${userId}":`, error);
+    }
   },
 
-  /** Full claim flow: validate, give token, mark claimed, return updated user. */
   async claimDailyCoffee(userId: string, dateStr: string): Promise<{ success: boolean; user: User; cooldownSeconds: number }> {
-    const user = await this.getUser(userId);
-    if (!user) {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) {
+        return { success: false, user: createDefaultUser(userId, userId), cooldownSeconds: 0 };
+      }
+
+      const canClaim = await this.canClaimCoffee(userId, dateStr);
+      if (!canClaim) {
+        const msToMidnight = new Date().setUTCHours(24, 0, 0, 0) - Date.now();
+        return { success: false, user, cooldownSeconds: Math.max(Math.floor(msToMidnight / 1000), 0) };
+      }
+
+      const now = Math.floor(Date.now() / 1000);
+      user.currentCoffeeTokens += 1;
+      user.lastCoffeeClaim = now;
+      await this.saveUser(user);
+      await this.setClaimedToday(userId, dateStr);
+
+      return { success: true, user: syncUserLegacy(user), cooldownSeconds: 0 };
+    } catch (error) {
+      console.error(`Redis failure in claimDailyCoffee for user "${userId}":`, error);
       return { success: false, user: createDefaultUser(userId, userId), cooldownSeconds: 0 };
     }
-
-    const canClaim = await this.canClaimCoffee(userId, dateStr);
-    if (!canClaim) {
-      const msToMidnight = new Date().setUTCHours(24, 0, 0, 0) - Date.now();
-      return { success: false, user, cooldownSeconds: Math.floor(msToMidnight / 1000) };
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-    user.currentCoffeeTokens += 1;
-    user.lastCoffeeClaim = now;
-    await this.saveUser(user);
-    await this.setClaimedToday(userId, dateStr);
-
-    return { success: true, user: syncUserLegacy(user), cooldownSeconds: 0 };
   },
 
-  // Backwards compat
   async hasClaimedToday(userId: string, dateStr: string): Promise<boolean> {
     return !(await this.canClaimCoffee(userId, dateStr));
   },
@@ -202,47 +204,63 @@ export const RedisService = {
   // GLOBAL CAFE STATE
   // ═══════════════════════════════════════════════════════════════════════
 
-  /** Fetch the global cafe state. Creates default if missing. */
   async getCafeState(): Promise<CafeState> {
-    const raw = await redis.get(RedisKeys.cafeState());
-    return safeParse<CafeState>(raw, createDefaultCafeState());
+    try {
+      const raw = await redis.get(RedisKeys.cafeState());
+      return safeParse<CafeState>(raw, createDefaultCafeState());
+    } catch (error) {
+      console.error('Redis failure in getCafeState:', error);
+      return createDefaultCafeState();
+    }
   },
 
-  /** Overwrite the entire cafe state. */
   async saveCafeState(state: CafeState): Promise<void> {
-    state.lastUpdated = Math.floor(Date.now() / 1000);
-    state.roomsUnlocked = buildUnlockedRooms(state.totalWarmth);
-    await redis.set(RedisKeys.cafeState(), JSON.stringify(state));
+    try {
+      state.lastUpdated = Math.floor(Date.now() / 1000);
+      state.roomsUnlocked = buildUnlockedRooms(state.totalWarmth);
+      await redis.set(RedisKeys.cafeState(), JSON.stringify(state));
+    } catch (error) {
+      console.error('Redis failure in saveCafeState:', error);
+    }
   },
 
-  /** Add warmth and return the new state with auto-unlocked rooms. */
   async updateCafeWarmth(amount: number): Promise<CafeState> {
-    const state = await this.getCafeState();
-    state.totalWarmth += amount;
-    state.roomsUnlocked = buildUnlockedRooms(state.totalWarmth);
-    await this.saveCafeState(state);
-    return state;
+    try {
+      const state = await this.getCafeState();
+      state.totalWarmth = Math.max(state.totalWarmth + amount, 0);
+      await this.saveCafeState(state);
+      return state;
+    } catch (error) {
+      console.error('Redis failure in updateCafeWarmth:', error);
+      return createDefaultCafeState();
+    }
   },
 
-  /** Increment global visitor count. */
   async incrementVisitors(): Promise<CafeState> {
-    const state = await this.getCafeState();
-    state.totalVisitors += 1;
-    await this.saveCafeState(state);
-    return state;
+    try {
+      const state = await this.getCafeState();
+      state.totalVisitors += 1;
+      await this.saveCafeState(state);
+      return state;
+    } catch (error) {
+      console.error('Redis failure in incrementVisitors:', error);
+      return createDefaultCafeState();
+    }
   },
 
-  /** Increment global note count and warmth. */
   async incrementNotes(warmth: number = 1): Promise<CafeState> {
-    const state = await this.getCafeState();
-    state.totalNotes += 1;
-    state.totalWarmth += warmth;
-    state.roomsUnlocked = buildUnlockedRooms(state.totalWarmth);
-    await this.saveCafeState(state);
-    return state;
+    try {
+      const state = await this.getCafeState();
+      state.totalNotes += 1;
+      state.totalWarmth = Math.max(state.totalWarmth + warmth, 0);
+      await this.saveCafeState(state);
+      return state;
+    } catch (error) {
+      console.error('Redis failure in incrementNotes:', error);
+      return createDefaultCafeState();
+    }
   },
 
-  // Legacy alias
   async getProgress() {
     const state = await this.getCafeState();
     return {
@@ -252,89 +270,104 @@ export const RedisService = {
     };
   },
   async saveProgress() {
-    // No-op — progress is derived from CafeState now
+    // Derived value, no-op
   },
 
   // ═══════════════════════════════════════════════════════════════════════
   // CONTRIBUTION METHODS
   // ═══════════════════════════════════════════════════════════════════════
 
-  /** Fetch a single contribution by ID. */
   async getContribution(id: string): Promise<Contribution | null> {
-    const raw = await redis.get(RedisKeys.contribution(id));
-    return safeParse<Contribution | null>(raw, null);
+    try {
+      const raw = await redis.get(RedisKeys.contribution(id));
+      return safeParse<Contribution | null>(raw, null);
+    } catch (error) {
+      console.error(`Redis failure in getContribution for ID "${id}":`, error);
+      return null;
+    }
   },
 
-  /** Save a contribution and index it. */
   async saveContribution(contrib: Contribution): Promise<void> {
-    await redis.set(RedisKeys.contribution(contrib.id), JSON.stringify(contrib));
+    try {
+      await redis.set(RedisKeys.contribution(contrib.id), JSON.stringify(contrib));
 
-    // Index in global sorted set (score = createdAt)
-    await redis.zAdd(RedisKeys.contributionsList(), {
-      member: contrib.id,
-      score: contrib.createdAt,
-    });
+      await redis.zAdd(RedisKeys.contributionsList(), {
+        member: contrib.id,
+        score: contrib.createdAt,
+      });
 
-    // Index by category
-    await redis.zAdd(RedisKeys.contributionsByCategory(contrib.category), {
-      member: contrib.id,
-      score: contrib.createdAt,
-    });
+      await redis.zAdd(RedisKeys.contributionsByCategory(contrib.category), {
+        member: contrib.id,
+        score: contrib.createdAt,
+      });
+    } catch (error) {
+      console.error(`Redis failure in saveContribution for ID "${contrib.id}":`, error);
+    }
   },
 
-  /** Get most recent contributions (newest first). */
   async getRecentContributions(limit: number = 50): Promise<Contribution[]> {
-    const ids = await redis.zRange(RedisKeys.contributionsList(), 0, limit - 1, {
-      by: 'score',
-      reverse: true,
-    });
+    try {
+      const ids = await redis.zRange(RedisKeys.contributionsList(), 0, limit - 1, {
+        by: 'score',
+        reverse: true,
+      });
 
-    const contribs: Contribution[] = [];
-    for (const entry of ids) {
-      const c = await this.getContribution(entry.member);
-      if (c) contribs.push(c);
+      const contribs: Contribution[] = [];
+      for (const entry of ids) {
+        const c = await this.getContribution(entry.member);
+        if (c) contribs.push(c);
+      }
+      return contribs;
+    } catch (error) {
+      console.error('Redis failure in getRecentContributions:', error);
+      return [];
     }
-    return contribs;
   },
 
-  /** Get contributions filtered by category (newest first). */
   async getContributionsByCategory(category: string, limit: number = 50): Promise<Contribution[]> {
-    const ids = await redis.zRange(RedisKeys.contributionsByCategory(category), 0, limit - 1, {
-      by: 'score',
-      reverse: true,
-    });
+    try {
+      const ids = await redis.zRange(RedisKeys.contributionsByCategory(category), 0, limit - 1, {
+        by: 'score',
+        reverse: true,
+      });
 
-    const contribs: Contribution[] = [];
-    for (const entry of ids) {
-      const c = await this.getContribution(entry.member);
-      if (c) contribs.push(c);
+      const contribs: Contribution[] = [];
+      for (const entry of ids) {
+        const c = await this.getContribution(entry.member);
+        if (c) contribs.push(c);
+      }
+      return contribs;
+    } catch (error) {
+      console.error(`Redis failure in getContributionsByCategory for "${category}":`, error);
+      return [];
     }
-    return contribs;
   },
 
-  /** Get a single random contribution. */
   async getRandomContribution(): Promise<Contribution | null> {
-    const totalRaw = await redis.zCard(RedisKeys.contributionsList());
-    const total = totalRaw ?? 0;
-    if (total === 0) return null;
+    try {
+      const totalRaw = await redis.zCard(RedisKeys.contributionsList());
+      const total = totalRaw ?? 0;
+      if (total === 0) return null;
 
-    const randomIndex = Math.floor(Math.random() * total);
-    const ids = await redis.zRange(RedisKeys.contributionsList(), randomIndex, randomIndex, {
-      by: 'score',
-    });
+      const randomIndex = Math.floor(Math.random() * total);
+      const ids = await redis.zRange(RedisKeys.contributionsList(), randomIndex, randomIndex, {
+        by: 'score',
+      });
 
-    if (ids.length === 0) return null;
-    const entry = ids[0];
-    if (!entry) return null;
-    return this.getContribution(entry.member);
+      if (ids.length === 0) return null;
+      const entry = ids[0];
+      if (!entry) return null;
+      return this.getContribution(entry.member);
+    } catch (error) {
+      console.error('Redis failure in getRandomContribution:', error);
+      return null;
+    }
   },
 
-  /** Fetch a contribution by ID (alias). */
   async getContributionById(id: string): Promise<Contribution | null> {
     return this.getContribution(id);
   },
 
-  // Legacy aliases
   async getLatestContributions(limit: number = 50) {
     return this.getRecentContributions(limit);
   },
@@ -349,35 +382,53 @@ export const RedisService = {
     username: string,
     timeMs: number
   ): Promise<void> {
-    await redis.zAdd(RedisKeys.puzzleLeaderboard(puzzleId, dateStr), {
-      member: username,
-      score: timeMs,
-    });
+    try {
+      await redis.zAdd(RedisKeys.puzzleLeaderboard(puzzleId, dateStr), {
+        member: username,
+        score: timeMs,
+      });
+    } catch (error) {
+      console.error(`Redis failure in submitPuzzleScore for "${puzzleId}"/user "${username}":`, error);
+    }
   },
 
   async getPuzzleLeaderboard(puzzleId: string, dateStr: string, limit: number = 10): Promise<LeaderboardEntry[]> {
-    const range = await redis.zRange(RedisKeys.puzzleLeaderboard(puzzleId, dateStr), 0, limit - 1, {
-      by: 'score',
-    });
+    try {
+      const range = await redis.zRange(RedisKeys.puzzleLeaderboard(puzzleId, dateStr), 0, limit - 1, {
+        by: 'score',
+      });
 
-    return range.map((entry, idx) => ({
-      username: entry.member,
-      timeMs: entry.score,
-      rank: idx + 1,
-      date: dateStr,
-    }));
+      return range.map((entry, idx) => ({
+        username: entry.member,
+        timeMs: entry.score,
+        rank: idx + 1,
+        date: dateStr,
+      }));
+    } catch (error) {
+      console.error(`Redis failure in getPuzzleLeaderboard for "${puzzleId}" on "${dateStr}":`, error);
+      return [];
+    }
   },
 
   async getPersonalBest(userId: string, puzzleId: string): Promise<number | null> {
-    const raw = await redis.get(RedisKeys.personalBest(userId));
-    const data = safeParse<Record<string, number>>(raw, {});
-    return data[puzzleId] ?? null;
+    try {
+      const raw = await redis.get(RedisKeys.personalBest(userId));
+      const data = safeParse<Record<string, number>>(raw, {});
+      return data[puzzleId] ?? null;
+    } catch (error) {
+      console.error(`Redis failure in getPersonalBest for user "${userId}" on "${puzzleId}":`, error);
+      return null;
+    }
   },
 
   async savePersonalBest(userId: string, puzzleId: string, timeMs: number): Promise<void> {
-    const raw = await redis.get(RedisKeys.personalBest(userId));
-    const data = safeParse<Record<string, number>>(raw, {});
-    data[puzzleId] = timeMs;
-    await redis.set(RedisKeys.personalBest(userId), JSON.stringify(data));
+    try {
+      const raw = await redis.get(RedisKeys.personalBest(userId));
+      const data = safeParse<Record<string, number>>(raw, {});
+      data[puzzleId] = timeMs;
+      await redis.set(RedisKeys.personalBest(userId), JSON.stringify(data));
+    } catch (error) {
+      console.error(`Redis failure in savePersonalBest for user "${userId}" on "${puzzleId}":`, error);
+    }
   },
 };
