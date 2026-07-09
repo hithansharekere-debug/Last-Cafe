@@ -4,6 +4,7 @@ import { Button } from '../components/Button';
 import { ProgressBar } from '../components/ProgressBar';
 import { Modal } from '../components/Modal';
 import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES } from '../../shared/constants';
+import type { ContributionCategory } from '../../shared/constants';
 import type { Room, CafeProgress, User } from '../../shared/types';
 
 interface CafeScreenProps {
@@ -32,7 +33,7 @@ const ROOM_DESCRIPTIONS: Record<string, string> = {
 
 export const CafeScreen = ({ user, progress, rooms, onSpendToken, onClaimToken }: CafeScreenProps) => {
   const [isLeaveNoteOpen, setIsLeaveNoteOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(CONTRIBUTION_CATEGORIES.MEMORY);
+  const [selectedCategory, setSelectedCategory] = useState<ContributionCategory>(CONTRIBUTION_CATEGORIES.MEMORY);
   const [noteText, setNoteText] = useState('');
   const [targetDate, setTargetDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
