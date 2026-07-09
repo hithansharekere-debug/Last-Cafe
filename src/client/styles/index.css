@@ -1,0 +1,175 @@
+/* Core Design System for The Last Cafe on the Internet */
+
+:root {
+  /* Cozy Color System */
+  --color-parchment: #fdfaf2;
+  --color-paper: #f7edd7;
+  --color-paper-shadow: #e2d2b5;
+  --color-wood-light: #8e5a36;
+  --color-wood-medium: #5c371d;
+  --color-wood-dark: #371e0c;
+  --color-coffee-espresso: #211107;
+  --color-coffee-latte: #c8a285;
+  --color-coffee-foam: #eeded1;
+  --color-accent-amber: #cf7929;
+  --color-accent-gold: #d4af37;
+  --color-accent-copper: #9b4618;
+  
+  --color-border-dark: #2c160a;
+  --color-text-dark: #26140b;
+  --color-text-light: #fdfaf2;
+  --color-text-muted: #5e463a;
+
+  /* Typography Stacks (No CDNs, easily swappable later) */
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-handwritten: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Caveat", cursive;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
+
+  /* Borders & Shadows */
+  --border-width: 2px;
+  --border-style: solid;
+  --border-vintage: var(--border-width) var(--border-style) var(--color-border-dark);
+  --shadow-handdrawn: 4px 4px 0px var(--color-border-dark);
+  --shadow-soft: 0 4px 15px rgba(38, 20, 11, 0.15);
+  
+  /* Layout constraints */
+  --app-max-width: 480px;
+}
+
+/* Reset and Globals */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  scrollbar-color: var(--color-wood-medium) var(--color-paper);
+  scrollbar-width: thin;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-coffee-espresso);
+  color: var(--color-text-dark);
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Typographic Utilities */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-handwritten {
+  font-family: var(--font-handwritten);
+}
+
+.font-sans {
+  font-family: var(--font-sans);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Cozy Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes steam {
+  0% { transform: translateY(0) scale(1) rotate(0deg); opacity: 0.2; }
+  50% { transform: translateY(-10px) scale(1.1) rotate(5deg); opacity: 0.5; }
+  100% { transform: translateY(-25px) scale(1.3) rotate(-5deg); opacity: 0; }
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+  100% { transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-steam {
+  animation: steam 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* Main Container Frame */
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-frame {
+  width: 100%;
+  height: 100%;
+  max-width: var(--app-max-width);
+  background-color: var(--color-parchment);
+  border-left: var(--border-vintage);
+  border-right: var(--border-vintage);
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Wood Planking Borders / Bars */
+.wood-plank-bg {
+  background-color: var(--color-wood-medium);
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 1px,
+    transparent 1px,
+    transparent 40px,
+    rgba(0, 0, 0, 0.15) 41px,
+    transparent 42px
+  );
+  border-bottom: var(--border-vintage);
+  color: var(--color-text-light);
+}
+
+/* Paper Napkin / Letter board texture */
+.paper-napkin {
+  background-color: var(--color-paper);
+  background-image: 
+    radial-gradient(circle at 100% 150%, var(--color-parchment) 24%, var(--color-paper-shadow) 25%, var(--color-paper-shadow) 28%, transparent 29%),
+    radial-gradient(circle at 0% 150%, var(--color-parchment) 24%, var(--color-paper-shadow) 25%, var(--color-paper-shadow) 28%, transparent 29%);
+  background-size: 20px 20px;
+}
+
+/* Hide default buttons and inputs */
+button {
+  outline: none;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: 1rem;
+}
