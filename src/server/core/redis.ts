@@ -308,7 +308,7 @@ export const RedisService = {
   async getRecentContributions(limit: number = 50): Promise<Contribution[]> {
     try {
       const ids = await redis.zRange(RedisKeys.contributionsList(), 0, limit - 1, {
-        by: 'score',
+        by: 'rank',
         reverse: true,
       });
 
@@ -327,7 +327,7 @@ export const RedisService = {
   async getContributionsByCategory(category: string, limit: number = 50): Promise<Contribution[]> {
     try {
       const ids = await redis.zRange(RedisKeys.contributionsByCategory(category), 0, limit - 1, {
-        by: 'score',
+        by: 'rank',
         reverse: true,
       });
 
@@ -351,7 +351,7 @@ export const RedisService = {
 
       const randomIndex = Math.floor(Math.random() * total);
       const ids = await redis.zRange(RedisKeys.contributionsList(), randomIndex, randomIndex, {
-        by: 'score',
+        by: 'rank',
       });
 
       if (ids.length === 0) return null;
@@ -395,7 +395,7 @@ export const RedisService = {
   async getPuzzleLeaderboard(puzzleId: string, dateStr: string, limit: number = 10): Promise<LeaderboardEntry[]> {
     try {
       const range = await redis.zRange(RedisKeys.puzzleLeaderboard(puzzleId, dateStr), 0, limit - 1, {
-        by: 'score',
+        by: 'rank',
       });
 
       return range.map((entry, idx) => ({

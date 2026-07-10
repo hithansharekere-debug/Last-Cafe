@@ -1,11 +1,11 @@
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
 import { ROOM_UNLOCK_THRESHOLDS } from '../../shared/constants';
-import type { User, CafeProgress } from '../../shared/types';
+import type { User, CafeState } from '../../shared/types';
 
 interface ProfileScreenProps {
   user: User | null;
-  progress: CafeProgress;
+  cafe: CafeState;
 }
 
 function formatDate(timestamp: number): string {
@@ -24,7 +24,7 @@ function getRank(count: number): { label: string; icon: string; next: string } {
   return { label: 'Stranger', icon: '👤', next: 'Leave your first note to become a New Visitor' };
 }
 
-export const ProfileScreen = ({ user, progress }: ProfileScreenProps) => {
+export const ProfileScreen = ({ user, cafe }: ProfileScreenProps) => {
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center w-full h-full p-6 gap-4">
@@ -36,17 +36,17 @@ export const ProfileScreen = ({ user, progress }: ProfileScreenProps) => {
     );
   }
 
-  const rank = getRank(user.contributionCount);
+  const rank = getRank(user.totalNotesWritten);
   const thresholds = Object.values(ROOM_UNLOCK_THRESHOLDS) as number[];
-  const nextRoomThreshold = thresholds.find((t) => t > progress.totalContributions) ?? ROOM_UNLOCK_THRESHOLDS.MUSIC_ROOM;
+  const nextRoomThreshold = thresholds.find((t) => t > cafe.totalWarmth) ?? ROOM_UNLOCK_THRESHOLDS.MUSIC_ROOM;
 
   const badges: { icon: string; label: string; earned: boolean }[] = [
     { icon: '🚪', label: 'First Visit', earned: true },
-    { icon: '☕', label: 'First Note', earned: user.contributionCount >= 1 },
-    { icon: '🔥', label: 'Fireplace', earned: progress.unlockedRooms.includes('fireplace') },
-    { icon: '📚', label: 'Bookshelf', earned: progress.unlockedRooms.includes('bookshelf') },
-    { icon: '🌿', label: 'Garden', earned: progress.unlockedRooms.includes('garden') },
-    { icon: '🎵', label: 'Music Room', earned: progress.unlockedRooms.includes('music_room') },
+    { icon: '☕', label: 'First Note', earned: user.totalNotesWritten >= 1 },
+    { icon: '🔥', label: 'Fireplace', earned: cafe.roomsUnlocked.includes('fireplace') },
+    { icon: '📚', label: 'Bookshelf', earned: cafe.roomsUnlocked.includes('bookshelf') },
+    { icon: '🌿', label: 'Garden', earned: cafe.roomsUnlocked.includes('garden') },
+    { icon: '🎵', label: 'Music Room', earned: cafe.roomsUnlocked.includes('music_room') },
     { icon: '⏳', label: 'Time Capsule', earned: false },
     { icon: '🧩', label: 'Puzzle Solver', earned: false },
   ];
@@ -78,10 +78,10 @@ export const ProfileScreen = ({ user, progress }: ProfileScreenProps) => {
             </div>
             <div className="flex flex-col items-end gap-1">
               <span className="font-mono text-xs text-[#eeded1]">
-                ☕ {user.tokenCount} {user.tokenCount === 1 ? 'token' : 'tokens'}
+                ☕ {user.currentCoffeeTokens} {user.currentCoffeeTokens === 1 ? 'token' : 'tokens'}
               </span>
               <span className="font-mono text-[10px] text-[#c8a285]">
-                Since {formatDate(user.joinedDate)}
+                Since {formatDate(user.joinedAt)}
               </span>
             </div>
           </div>
@@ -89,15 +89,15 @@ export const ProfileScreen = ({ user, progress }: ProfileScreenProps) => {
           {/* Stats grid */}
           <div className="bg-[#fdfaf2] p-4 grid grid-cols-3 gap-2 border-t border-dashed border-[#c8a285]">
             <div className="flex flex-col items-center gap-1">
-              <span className="font-serif font-bold text-xl text-[#2c160a]">{user.contributionCount}</span>
+              <span className="font-serif font-bold text-xl text-[#2c160a]">{user.totalNotesWritten}</span>
               <span className="font-serif text-[10px] text-[#5e463a] text-center">Notes Left</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="font-serif font-bold text-xl text-[#2c160a]">{user.tokenCount}</span>
+              <span className="font-serif font-bold text-xl text-[#2c160a]">{user.currentCoffeeTokens}</span>
               <span className="font-serif text-[10px] text-[#5e463a] text-center">Tokens</span>
             </div>
             <div className="flex flex-col items-center gap-1">
-              <span className="font-serif font-bold text-xl text-[#2c160a]">{progress.unlockedRooms.length}</span>
+              <span className="font-serif font-bold text-xl text-[#2c160a]">{cafe.roomsUnlocked.length}</span>
               <span className="font-serif text-[10px] text-[#5e463a] text-center">Rooms Open</span>
             </div>
           </div>
@@ -108,13 +108,13 @@ export const ProfileScreen = ({ user, progress }: ProfileScreenProps) => {
       <div className="px-4 pt-4 pb-2">
         <Card variant="deck" elevation="low">
           <p className="font-serif text-xs font-bold text-[#2c160a] mb-2">📈 Your Progress</p>
-          <ProgressBar value={user.contributionCount} max={20} label="Notes Written" subLabel={rank.next} />
+          <ProgressBar value={user.totalNotesWritten} max={20} label="Notes Written" subLabel={rank.next} />
           <div className="mt-3">
             <ProgressBar
-              value={progress.totalContributions}
+              value={cafe.totalWarmth}
               max={nextRoomThreshold}
               label="Community Progress"
-              subLabel={`${nextRoomThreshold - progress.totalContributions} more to next room`}
+              subLabel={`${nextRoomThreshold - cafe.totalWarmth} more warmth to next room`}
             />
           </div>
         </Card>

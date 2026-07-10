@@ -21,14 +21,32 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ backgroundColor: 'rgba(38,20,11,0.75)' }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '16px',
+        backgroundColor: 'rgba(38,20,11,0.75)',
+        cursor: 'default',
+      }}
       onClick={onClose}
     >
       {/* Modal panel — wooden board aesthetic */}
       <div
-        className="animate-slide-in relative w-full max-w-sm rounded border-2 border-[#2c160a] overflow-hidden"
+        className="animate-slide-in"
         style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '380px',
+          borderRadius: '4px',
+          border: '2px solid #2c160a',
+          overflow: 'hidden',
           boxShadow: '6px 6px 0px #2c160a',
           backgroundColor: '#fdfaf2',
         }}
@@ -43,7 +61,7 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
           )}
           <button
             onClick={onClose}
-            className="ml-auto text-[#eeded1] hover:text-[#fdfaf2] font-mono text-lg leading-none transition-colors"
+            className="ml-auto text-[#eeded1] hover:text-[#fdfaf2] font-mono text-lg leading-none transition-colors cursor-pointer"
             aria-label="Close modal"
           >
             ✕

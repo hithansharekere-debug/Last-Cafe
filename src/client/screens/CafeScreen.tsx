@@ -2,22 +2,17 @@ import { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { ProgressBar } from '../components/ProgressBar';
-import { Modal } from '../components/Modal';
-import { NoteCard } from '../components/NoteCard';
-import { EmptyState } from '../components/EmptyState';
-import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES } from '../../shared/constants';
-import type { ContributionCategory } from '../../shared/constants';
-import type { Room, CafeProgress, User, CafeState, Contribution } from '../../shared/types';
+import { ROOM_UNLOCK_THRESHOLDS } from '../../shared/constants';
+import type { Room, User, CafeState, Contribution } from '../../shared/types';
 
 interface CafeScreenProps {
   user: User | null;
   cafe: CafeState;
-  progress: CafeProgress;
   rooms: Room[];
   contributions: Contribution[];
   canClaimCoffee: boolean;
-  onSpendToken: (category: string, text: string, targetDate?: number) => Promise<boolean>;
   onClaimToken: () => Promise<boolean>;
+  onOpenComposer: () => void;
 }
 
 const ROOM_ICONS: Record<string, string> = {
@@ -65,18 +60,9 @@ export const CafeScreen = ({
   rooms,
   contributions,
   canClaimCoffee,
-  onSpendToken,
   onClaimToken,
+  onOpenComposer,
 }: CafeScreenProps) => {
-  const [isLeaveNoteOpen, setIsLeaveNoteOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<ContributionCategory>(
-    CONTRIBUTION_CATEGORIES.MEMORY
-  );
-  const [noteText, setNoteText] = useState('');
-  const [targetDate, setTargetDate] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
   // Claim status states
   const [isClaiming, setIsClaiming] = useState(false);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
@@ -112,40 +98,6 @@ export const CafeScreen = ({
       setTimeout(() => setErrorMessage(null), 4000);
     } finally {
       setIsClaiming(false);
-    }
-  };
-
-  const handleSubmitNote = async () => {
-    if (!noteText.trim() || currentTokens <= 0) return;
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    const parsedDate =
-      selectedCategory === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && targetDate
-        ? Math.floor(new Date(targetDate).getTime() / 1000)
-        : undefined;
-
-    try {
-      const success = await onSpendToken(selectedCategory, noteText.trim(), parsedDate);
-
-      if (success) {
-        setSuccessMessage('Noisy typewriter → Note pinned.');
-        setNoteText('');
-        setTargetDate('');
-        setSelectedCategory(CONTRIBUTION_CATEGORIES.MEMORY);
-        setTimeout(() => {
-          setIsLeaveNoteOpen(false);
-          setSuccessMessage(null);
-        }, 2200);
-      } else {
-        setErrorMessage('Failed to leave your note. Try again.');
-        setTimeout(() => setErrorMessage(null), 4000);
-      }
-    } catch {
-      setErrorMessage('Failed to connect to the cafe board.');
-      setTimeout(() => setErrorMessage(null), 4000);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -215,12 +167,12 @@ export const CafeScreen = ({
               size="sm"
               onClick={handleClaim}
               disabled={!canClaimCoffee || isClaiming}
-              className="flex-grow"
+              className="flex-grow cursor-pointer"
             >
               {isClaiming ? 'Brewing...' : canClaimCoffee ? '☕ Claim Daily Coffee' : 'Brewed'}
             </Button>
             {!canClaimCoffee && (
-              <span className="font-mono text-xs bg-[#fdfaf2] px-2 py-1.5 rounded border border-[#2c160a] text-[#5e463a]">
+              <span className="font-mono text-xs bg-[#fdfaf2] px-2 py-1.5 rounded border border-[#2c160a] text-[#5e463a] select-none">
                 {formatCountdown(msUntilMidnight)}
               </span>
             )}
@@ -229,7 +181,7 @@ export const CafeScreen = ({
 
         {/* Contribution Trigger */}
         <div className="mt-4">
-          {currentTokens === 0 ? (
+          {!hasTokens ? (
             <div className="p-3 bg-[#eeded1]/20 border border-dashed border-[#c8a285] rounded text-center">
               <p className="font-serif text-xs text-[#cf7929] italic">
                 You've finished today's coffee. Come back tomorrow.
@@ -239,9 +191,10 @@ export const CafeScreen = ({
             <Button
               variant="secondary"
               size="md"
-              onClick={() => setIsLeaveNoteOpen(true)}
-              disabled={currentTokens <= 0}
+              onClick={onOpenComposer}
+              disabled={!hasTokens}
               fullWidth
+              className="cursor-pointer"
             >
               ✍️ Leave a Note (Spend 1 Token)
             </Button>
@@ -255,7 +208,7 @@ export const CafeScreen = ({
           <h2 className="font-serif font-bold text-xs text-[#2c160a] uppercase tracking-wider">
             🗺 Unlocked Areas ({cafe.roomsUnlocked.length} / 5)
           </h2>
-          <span className="font-mono text-[10px] text-[#5e463a]">
+          <span className="font-mono text-[10px] text-[#5e463a] select-none">
             👤 {cafe.totalVisitors} recent visitors
           </span>
         </div>
@@ -270,7 +223,7 @@ export const CafeScreen = ({
               }`}
             >
               <div className="flex items-center gap-2">
-                <span className="text-lg">{room.isUnlocked ? ROOM_ICONS[room.id] : '🔒'}</span>
+                <span className="text-lg select-none">{room.isUnlocked ? ROOM_ICONS[room.id] : '🔒'}</span>
                 <div>
                   <p className="font-bold">{room.name}</p>
                   <p className="text-[10px] text-[#5e463a]/80 font-normal">
@@ -279,11 +232,11 @@ export const CafeScreen = ({
                 </div>
               </div>
               {room.isUnlocked ? (
-                <span className="font-mono text-[9px] bg-[#4a7c59] text-[#fdfaf2] px-1.5 py-0.5 rounded font-bold">
+                <span className="font-mono text-[9px] bg-[#4a7c59] text-[#fdfaf2] px-1.5 py-0.5 rounded font-bold select-none">
                   OPEN
                 </span>
               ) : (
-                <span className="font-mono text-[9px] bg-[#c8a285]/20 text-[#5e463a] px-1.5 py-0.5 rounded">
+                <span className="font-mono text-[9px] bg-[#c8a285]/20 text-[#5e463a] px-1.5 py-0.5 rounded select-none">
                   {room.threshold}
                 </span>
               )}
@@ -299,108 +252,46 @@ export const CafeScreen = ({
         </h2>
 
         {contributions.length === 0 ? (
-          <EmptyState
-            icon="📭"
-            title="The Cafe is Quiet"
-            message="The cafe is quiet today. Why not leave the first note?"
-          />
+          <div className="p-3 bg-[#eeded1]/20 border border-dashed border-[#c8a285] rounded text-center">
+            <p className="font-serif text-xs text-[#5e463a] italic mb-2">
+              The cafe is quiet today. Why not leave the first note?
+            </p>
+            {hasTokens && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onOpenComposer}
+                className="cursor-pointer"
+              >
+                ✍️ Leave First Note
+              </Button>
+            )}
+          </div>
         ) : (
           <div className="flex flex-col gap-3">
             {contributions.slice(0, 3).map((contrib) => (
-              <NoteCard key={contrib.id} contribution={contrib} />
+              <Card
+                key={contrib.id}
+                variant="parchment"
+                elevation="low"
+                className="p-3 border-2 border-[#2c160a] bg-[#fdfaf2]"
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-mono text-[9px] uppercase tracking-widest px-1 py-0.5 rounded bg-[#eeded1] text-[#2c160a] border border-[#2c160a] select-none">
+                    {contrib.category}
+                  </span>
+                  <span className="font-serif text-[9px] text-[#5e463a]">
+                    — {contrib.username}
+                  </span>
+                </div>
+                <p className="font-handwritten text-xs text-[#26140b] leading-relaxed">
+                  "{contrib.message || contrib.text}"
+                </p>
+              </Card>
             ))}
           </div>
         )}
       </div>
-
-      {/* Leave a note modal */}
-      <Modal
-        isOpen={isLeaveNoteOpen}
-        onClose={() => {
-          if (!isSubmitting) setIsLeaveNoteOpen(false);
-        }}
-        title="Leave a Note for the Cafe"
-      >
-        {successMessage ? (
-          <div className="flex flex-col items-center gap-3 py-4 text-center">
-            <span className="text-4xl animate-bounce">📝</span>
-            <p className="font-serif text-sm text-[#2c160a] leading-relaxed font-bold">
-              {successMessage}
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {/* Category selection */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-serif text-xs font-bold text-[#2c160a]">Category</label>
-              <div className="flex flex-wrap gap-1.5">
-                {Object.values(CONTRIBUTION_CATEGORIES).map((cat) => (
-                  <button
-                    key={cat}
-                    onClick={() => setSelectedCategory(cat)}
-                    className={`px-2.5 py-1 text-xs font-serif rounded border border-[#2c160a] transition-all ${
-                      selectedCategory === cat
-                        ? 'bg-[#cf7929] text-[#fdfaf2] shadow-[2px_2px_0px_#2c160a]'
-                        : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#c8a285]'
-                    }`}
-                  >
-                    {cat}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Note text */}
-            <div className="flex flex-col gap-1.5">
-              <label className="font-serif text-xs font-bold text-[#2c160a]">Your Note</label>
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Write something worth leaving behind…"
-                maxLength={250}
-                rows={4}
-                className="w-full rounded border-2 border-[#2c160a] p-2.5 font-serif text-sm text-[#26140b] resize-none bg-[#f7edd7] placeholder:italic placeholder:text-[#c8a285] focus:outline-none focus:border-[#cf7929]"
-              />
-              <span className="font-mono text-[10px] text-[#5e463a] text-right">
-                {noteText.length}/250
-              </span>
-            </div>
-
-            {/* Time Capsule date */}
-            {selectedCategory === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && (
-              <div className="flex flex-col gap-1.5">
-                <label className="font-serif text-xs font-bold text-[#2c160a]">Unlock Date</label>
-                <input
-                  type="date"
-                  value={targetDate}
-                  onChange={(e) => setTargetDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="w-full rounded border-2 border-[#2c160a] p-2 font-serif text-sm bg-[#f7edd7] text-[#26140b] focus:outline-none focus:border-[#cf7929]"
-                />
-                <p className="font-serif text-[10px] text-[#5e463a] italic">
-                  Your note will only appear after this date.
-                </p>
-              </div>
-            )}
-
-            {errorMessage && (
-              <p className="text-xs text-[#cf7929] font-serif italic text-center font-bold">
-                {errorMessage}
-              </p>
-            )}
-
-            <Button
-              variant="primary"
-              size="md"
-              fullWidth
-              disabled={!noteText.trim() || currentTokens <= 0 || isSubmitting}
-              onClick={handleSubmitNote}
-            >
-              {isSubmitting ? 'Placing note…' : `Leave this ${selectedCategory} (1 token)`}
-            </Button>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 };

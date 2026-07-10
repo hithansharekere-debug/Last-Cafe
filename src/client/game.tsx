@@ -1,6 +1,6 @@
 import './styles/index.css';
 
-import React, { StrictMode } from 'react';
+import React, { StrictMode, useCallback, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
@@ -8,6 +8,7 @@ import { useCafe } from './hooks/useCafe';
 
 import { Header } from './components/Header';
 import { LoadingState } from './components/LoadingState';
+import { NoteComposerModal } from './components/NoteComposerModal';
 
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { CafeScreen } from './screens/CafeScreen';
@@ -21,7 +22,6 @@ const AppContent = () => {
   const {
     user,
     cafe,
-    progress,
     rooms,
     contributions,
     puzzleLeaderboard,
@@ -30,13 +30,50 @@ const AppContent = () => {
     claimCoffee,
     addContribution,
     fetchContributions,
-    submitPuzzleScore: _submitPuzzleScore,
     fetchPuzzleLeaderboard,
     canClaimCoffee,
   } = useCafe();
 
+  const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [discoverFilter, setDiscoverFilter] = useState('All');
+
   // Check if token was already claimed today (based on lastClaimedTimestamp)
   const hasClaimedToday = !canClaimCoffee;
+
+  // Stable callback wraps to prevent inline re-creation on every render cycle
+  const handleFetchAllContributions = useCallback(() => {
+    void fetchContributions('All');
+  }, [fetchContributions]);
+
+  const handleFetchCategoryContributions = useCallback((category: string) => {
+    void fetchContributions(category);
+  }, [fetchContributions]);
+
+  const handleFetchPuzzleLeaderboard = useCallback((puzzleId?: string) => {
+    void fetchPuzzleLeaderboard(puzzleId);
+  }, [fetchPuzzleLeaderboard]);
+
+  const handleOpenComposer = useCallback(() => {
+    setIsComposerOpen(true);
+  }, []);
+
+  const handleFilterChange = useCallback((filter: string) => {
+    setDiscoverFilter(filter);
+    void fetchContributions(filter);
+  }, [fetchContributions]);
+
+  const handleSpendToken = useCallback(async (category: string, text: string, targetDate?: number) => {
+    const success = await addContribution(category, text, targetDate);
+    if (success) {
+      // Re-fetch categories on success
+      if (currentScreen === 'discover') {
+        void fetchContributions(discoverFilter);
+      } else {
+        void fetchContributions('All');
+      }
+    }
+    return success;
+  }, [addContribution, currentScreen, discoverFilter, fetchContributions]);
 
   if (loading) {
     return (
@@ -55,12 +92,11 @@ const AppContent = () => {
           <CafeScreen
             user={user}
             cafe={cafe}
-            progress={progress}
             rooms={rooms}
             contributions={contributions}
             canClaimCoffee={canClaimCoffee}
-            onSpendToken={addContribution}
             onClaimToken={claimCoffee}
+            onOpenComposer={handleOpenComposer}
           />
         );
       case 'table':
@@ -68,7 +104,8 @@ const AppContent = () => {
           <CommunityTableScreen
             contributions={contributions}
             loading={false}
-            onFetchContributions={() => { void fetchContributions('All'); }}
+            onFetchContributions={handleFetchAllContributions}
+            onOpenComposer={handleOpenComposer}
           />
         );
       case 'discover':
@@ -76,7 +113,9 @@ const AppContent = () => {
           <DiscoverScreen
             contributions={contributions}
             loading={false}
-            onFetchContributions={(category) => { void fetchContributions(category); }}
+            onFetchContributions={handleFetchCategoryContributions}
+            activeFilter={discoverFilter}
+            onFilterChange={handleFilterChange}
           />
         );
       case 'puzzle':
@@ -84,11 +123,11 @@ const AppContent = () => {
           <PuzzleCornerScreen
             pbTimeMs={pbTimeMs}
             leaderboard={puzzleLeaderboard}
-            onFetchLeaderboard={(puzzleId) => { void fetchPuzzleLeaderboard(puzzleId); }}
+            onFetchLeaderboard={handleFetchPuzzleLeaderboard}
           />
         );
       case 'profile':
-        return <ProfileScreen user={user} progress={progress} />;
+        return <ProfileScreen user={user} cafe={cafe} />;
       default:
         return <WelcomeScreen />;
     }
@@ -101,9 +140,16 @@ const AppContent = () => {
         onClaimToken={claimCoffee}
         hasClaimedToday={hasClaimedToday}
       />
-      <main className="flex-1 overflow-hidden flex flex-col">
+      <main className="flex-1 overflow-hidden flex flex-col font-serif">
         {renderScreen()}
       </main>
+
+      <NoteComposerModal
+        isOpen={isComposerOpen}
+        onClose={() => setIsComposerOpen(false)}
+        currentTokens={user?.currentCoffeeTokens ?? 0}
+        onSpendToken={handleSpendToken}
+      />
     </div>
   );
 };

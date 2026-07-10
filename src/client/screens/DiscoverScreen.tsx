@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect } from 'react';
 import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
@@ -9,11 +9,11 @@ interface DiscoverScreenProps {
   contributions: Contribution[];
   loading: boolean;
   onFetchContributions: (category: string) => void;
+  activeFilter: string;
+  onFilterChange: (filter: string) => void;
 }
 
-type FilterOption = 'All' | 'Memory' | 'Advice' | 'Gratitude' | 'Recommendation' | 'Secret' | 'Time Capsule';
-
-const FILTER_OPTIONS: { label: string; value: FilterOption; icon: string }[] = [
+const FILTER_OPTIONS: { label: string; value: string; icon: string }[] = [
   { label: 'All', value: 'All', icon: '🗂' },
   { label: 'Memories', value: 'Memory', icon: '💭' },
   { label: 'Advice', value: 'Advice', icon: '🌿' },
@@ -44,20 +44,13 @@ export const DiscoverScreen = ({
   contributions,
   loading,
   onFetchContributions,
+  activeFilter,
+  onFilterChange,
 }: DiscoverScreenProps) => {
-  const [activeFilter, setActiveFilter] = useState<FilterOption>('All');
-
-  const handleFilter = useCallback(
-    (filter: FilterOption) => {
-      setActiveFilter(filter);
-      onFetchContributions(filter);
-    },
-    [onFetchContributions]
-  );
-
+  // Pull current active filter contributions on mount
   useEffect(() => {
-    onFetchContributions('All');
-  }, [onFetchContributions]);
+    onFetchContributions(activeFilter);
+  }, [onFetchContributions, activeFilter]);
 
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2]">
@@ -77,14 +70,14 @@ export const DiscoverScreen = ({
             return (
               <button
                 key={value}
-                onClick={() => handleFilter(value)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#2c160a] font-serif text-xs whitespace-nowrap flex-shrink-0 transition-all duration-150 ${
+                onClick={() => onFilterChange(value)}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#2c160a] font-serif text-xs whitespace-nowrap flex-shrink-0 transition-all duration-150 cursor-pointer ${
                   isActive
                     ? 'bg-[#2c160a] text-[#fdfaf2] shadow-[2px_2px_0px_rgba(44,22,10,0.5)]'
                     : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#c8a285]'
                 }`}
               >
-                <span>{icon}</span>
+                <span className="select-none">{icon}</span>
                 <span>{label}</span>
               </button>
             );
@@ -131,12 +124,12 @@ const DiscoverCard = ({ contribution }: { contribution: Contribution }) => {
       <div className="flex flex-col gap-2 pt-1">
         <div className="flex items-center justify-between">
           <span
-            className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border font-bold"
+            className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border font-bold select-none"
             style={{ backgroundColor: palette.bg, color: palette.text, borderColor: palette.border }}
           >
             {contribution.category}
           </span>
-          <span className="font-mono text-[10px] text-[#5e463a]">
+          <span className="font-mono text-[10px] text-[#5e463a] select-none">
             {formatRelativeTime(contribution.createdAt || contribution.timestamp)}
           </span>
         </div>
@@ -146,14 +139,14 @@ const DiscoverCard = ({ contribution }: { contribution: Contribution }) => {
         </p>
 
         {contribution.category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && contribution.targetDate !== undefined && (
-          <p className="font-serif text-[10px] text-[#9b4618] italic">
+          <p className="font-serif text-[10px] text-[#9b4618] italic select-none">
             ⏳ Opened on {new Date(contribution.targetDate * 1000).toLocaleDateString()}
           </p>
         )}
 
         <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#c8a285] text-[10px] text-[#5e463a] font-serif">
           <span className="italic">— {contribution.username}</span>
-          <div className="flex items-center gap-2 font-mono">
+          <div className="flex items-center gap-2 font-mono select-none">
             <span>🔥 {contribution.warmthGiven || 1}</span>
             <span>❤️ {contribution.likes || 0}</span>
           </div>

@@ -8,12 +8,14 @@ interface CommunityTableScreenProps {
   contributions: Contribution[];
   loading: boolean;
   onFetchContributions: () => void;
+  onOpenComposer: () => void;
 }
 
 export const CommunityTableScreen = ({
   contributions,
   loading,
   onFetchContributions,
+  onOpenComposer,
 }: CommunityTableScreenProps) => {
   useEffect(() => {
     onFetchContributions();
@@ -41,8 +43,10 @@ export const CommunityTableScreen = ({
         {contributions.length === 0 ? (
           <EmptyState
             icon="📭"
-            title="The Table is Empty"
+            title="Be the first visitor"
             message="The cafe is quiet today. Why not leave the first note?"
+            actionLabel="✍️ Leave First Note"
+            onAction={onOpenComposer}
           />
         ) : (
           contributions.map((contrib) => (

@@ -138,7 +138,7 @@ export const useCafe = () => {
   // ═══════════════════════════════════════════════════════════════════════
   // 2. Claim daily coffee token
   // ═══════════════════════════════════════════════════════════════════════
-  const claimCoffee = async (): Promise<boolean> => {
+  const claimCoffee = useCallback(async (): Promise<boolean> => {
     setError(null);
     try {
       const res = await fetch('/api/claim', { method: 'POST' });
@@ -169,7 +169,7 @@ export const useCafe = () => {
       }
       return false;
     }
-  };
+  }, [user]);
 
   // Legacy alias
   const claimDailyToken = claimCoffee;
@@ -177,7 +177,7 @@ export const useCafe = () => {
   // ═══════════════════════════════════════════════════════════════════════
   // 3. Add contribution
   // ═══════════════════════════════════════════════════════════════════════
-  const addContribution = async (category: string, message: string, targetDate?: number): Promise<boolean> => {
+  const addContribution = useCallback(async (category: string, message: string, targetDate?: number): Promise<boolean> => {
     if (!user || user.currentCoffeeTokens < 1) {
       setError('You need a coffee token to leave a note.');
       return false;
@@ -206,12 +206,12 @@ export const useCafe = () => {
       console.error('Failed to add contribution:', err);
       return false;
     }
-  };
+  }, [user, refresh]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // 4. Spend token (legacy)
   // ═══════════════════════════════════════════════════════════════════════
-  const spendToken = async (category: string, text: string, targetDate?: number): Promise<boolean> => {
+  const spendToken = useCallback(async (category: string, text: string, targetDate?: number): Promise<boolean> => {
     if (!user || user.currentCoffeeTokens < 1) {
       setError('You need a coffee token to leave a note.');
       return false;
@@ -278,7 +278,7 @@ export const useCafe = () => {
       }
       return false;
     }
-  };
+  }, [user]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // 5. Fetch contributions
@@ -350,7 +350,7 @@ export const useCafe = () => {
   // ═══════════════════════════════════════════════════════════════════════
   // 6. Puzzle score submission
   // ═══════════════════════════════════════════════════════════════════════
-  const submitPuzzleScore = async (puzzleId: string, timeMs: number): Promise<boolean> => {
+  const submitPuzzleScore = useCallback(async (puzzleId: string, timeMs: number): Promise<boolean> => {
     setError(null);
     try {
       const res = await fetch('/api/puzzle/submit', {
@@ -384,7 +384,7 @@ export const useCafe = () => {
       });
       return true;
     }
-  };
+  }, [pbTimeMs, user]);
 
   // ═══════════════════════════════════════════════════════════════════════
   // 7. Fetch puzzle leaderboard
