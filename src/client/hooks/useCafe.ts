@@ -33,7 +33,7 @@ export const useCafe = () => {
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [puzzleLeaderboard, setPuzzleLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [pbTimeMs, setPbTimeMs] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [canClaimCoffee, setCanClaimCoffee] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -130,10 +130,7 @@ export const useCafe = () => {
     }
   }, []);
 
-  // Run on mount
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
+
 
   // ═══════════════════════════════════════════════════════════════════════
   // 2. Claim daily coffee token

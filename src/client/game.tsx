@@ -1,14 +1,15 @@
 import './styles/index.css';
 
-import React, { StrictMode, useCallback, useState } from 'react';
+import React, { StrictMode, useCallback, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 
 import { NavigationProvider, useNavigation } from './context/NavigationContext';
 import { useCafe } from './hooks/useCafe';
 
 import { Header } from './components/Header';
-import { LoadingState } from './components/LoadingState';
 import { NoteComposerModal } from './components/NoteComposerModal';
+import { LoadingState } from './components/LoadingState';
+import { Button } from './components/Button';
 
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { CafeScreen } from './screens/CafeScreen';
@@ -32,13 +33,46 @@ const AppContent = () => {
     fetchContributions,
     fetchPuzzleLeaderboard,
     canClaimCoffee,
+    refresh,
   } = useCafe();
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [discoverFilter, setDiscoverFilter] = useState('All');
 
+  // Milestone Celebration States
+  const [prevUnlockedRooms, setPrevUnlockedRooms] = useState<string[]>([]);
+  const [celebrationMessage, setCelebrationMessage] = useState<string | null>(null);
+
   // Check if token was already claimed today (based on lastClaimedTimestamp)
   const hasClaimedToday = !canClaimCoffee;
+
+  // Trigger initialization when moving away from welcome screen
+  useEffect(() => {
+    if (currentScreen !== 'welcome' && !user && !loading) {
+      void refresh();
+    }
+  }, [currentScreen, user, loading, refresh]);
+
+  // Track room unlock milestones
+  useEffect(() => {
+    if (rooms && rooms.length > 0) {
+      const unlockedIds = rooms.filter((r) => r.isUnlocked).map((r) => r.id);
+      if (prevUnlockedRooms.length > 0) {
+        const newlyUnlocked = unlockedIds.filter((id) => !prevUnlockedRooms.includes(id));
+        if (newlyUnlocked.length > 0) {
+          const roomNames: Record<string, string> = {
+            fireplace: '🔥 Fireplace Room',
+            bookshelf: '📚 Library Bookshelf',
+            garden: '🌿 Hidden Garden',
+            music_room: '🎵 Music Conservatory',
+          };
+          const names = newlyUnlocked.map((id) => roomNames[id] || id).join(', ');
+          setCelebrationMessage(`✨ The ${names} has opened!`);
+        }
+      }
+      setPrevUnlockedRooms(unlockedIds);
+    }
+  }, [rooms]);
 
   // Stable callback wraps to prevent inline re-creation on every render cycle
   const handleFetchAllContributions = useCallback(() => {
@@ -78,7 +112,7 @@ const AppContent = () => {
   if (loading) {
     return (
       <div className="app-frame">
-        <LoadingState message="The cafe is warming up…" />
+        <LoadingState message="Warming up the cafe..." />
       </div>
     );
   }
@@ -150,6 +184,47 @@ const AppContent = () => {
         currentTokens={user?.currentCoffeeTokens ?? 0}
         onSpendToken={handleSpendToken}
       />
+
+      {/* Milestone celebration overlay */}
+      {celebrationMessage && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: 'rgba(38,20,11,0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+          }}
+        >
+          <div
+            className="animate-celebrate p-6 text-center rounded border-2 border-[#2c160a]"
+            style={{
+              backgroundColor: '#fdfaf2',
+              boxShadow: '6px 6px 0px #2c160a',
+              maxWidth: '320px',
+              width: '100%',
+            }}
+          >
+            <span className="text-5xl block mb-3 animate-bounce select-none">🎉</span>
+            <h2 className="font-serif font-bold text-base text-[#2c160a] mb-2 select-none">Room Unlocked!</h2>
+            <p className="font-serif text-sm text-[#5e463a] leading-relaxed mb-4">
+              {celebrationMessage}
+            </p>
+            <Button
+              variant="primary"
+              size="sm"
+              fullWidth
+              className="cursor-pointer"
+              onClick={() => setCelebrationMessage(null)}
+            >
+              Step Inside →
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -20,7 +20,7 @@
   --color-text-light: #fdfaf2;
   --color-text-muted: #5e463a;
 
-  /* Typography Stacks (No CDNs, easily swappable later) */
+  /* Typography Stacks (No CDNs) */
   --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
   --font-handwritten: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Caveat", cursive;
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -98,6 +98,28 @@ body {
   100% { transform: translateY(0); }
 }
 
+@keyframes pulseWarmth {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.03); filter: brightness(1.15); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@keyframes celebrateUnlock {
+  0% { transform: scale(0.6) rotate(-5deg); opacity: 0; }
+  70% { transform: scale(1.08) rotate(3deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes shine {
+  from { left: -100%; }
+  to { left: 200%; }
+}
+
+@keyframes highlightFade {
+  0% { background-color: rgba(212, 175, 55, 0.35); border-color: var(--color-accent-gold); }
+  100% { background-color: var(--color-parchment); border-color: var(--color-border-dark); }
+}
+
 .animate-fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
@@ -112,6 +134,19 @@ body {
 
 .animate-float {
   animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-warmth {
+  animation: pulseWarmth 2s ease-in-out infinite;
+}
+
+.animate-celebrate {
+  animation: celebrateUnlock 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Note highlight on creation */
+.newly-submitted-note {
+  animation: highlightFade 4s ease-out forwards;
 }
 
 /* Main Container Frame */
@@ -172,4 +207,84 @@ button {
 input, textarea, select {
   font-family: inherit;
   font-size: 1rem;
+}
+
+/* Skeletons */
+.skeleton-pulse {
+  background-color: #eeded1;
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-pulse::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background-image: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 0.3) 30%,
+    rgba(255, 255, 255, 0.6) 60%,
+    rgba(255, 255, 255, 0)
+  );
+  animation: shine 1.6s infinite;
+}
+
+/* Blueprint / Visual Floor Plan styles */
+.blueprint-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  background-color: var(--color-border-dark);
+  padding: 8px;
+  border-radius: 6px;
+  border: 2px solid var(--color-border-dark);
+  box-shadow: inset 2px 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+.blueprint-room {
+  border-radius: 4px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border: 1px solid var(--color-border-dark);
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.blueprint-room.locked {
+  background-color: #8e8076;
+  opacity: 0.7;
+}
+
+.blueprint-room.unlocked {
+  box-shadow: inset 0 0 10px rgba(255,255,255,0.1), 2px 2px 0px rgba(0,0,0,0.3);
+}
+
+/* Cozy Custom Toasts */
+.cozy-toast {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  background-color: var(--color-border-dark);
+  color: var(--color-text-light);
+  border: 2px solid var(--color-accent-amber);
+  border-radius: 4px;
+  padding: 10px 16px;
+  font-family: var(--font-serif);
+  font-size: 12px;
+  box-shadow: 4px 4px 0px var(--color-accent-gold);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: slideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
