@@ -5,7 +5,6 @@ import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES } from '../../shared/co
 import type {
   InitResponse,
   ClaimTokenResponse,
-  SpendTokenResponse,
   AddContributionResponse,
   ContributionsListResponse,
   LeaderboardResponse,
@@ -16,6 +15,9 @@ import type {
   CafeProgress,
   User,
   ErrorResponse,
+  DailyObjective,
+  LikeResponse,
+  FavoriteResponse,
 } from '../../shared/types';
 
 export const api = new Hono();
@@ -25,6 +27,70 @@ export const api = new Hono();
 function getTodayDateString(): string {
   const d = new Date();
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+function getDailyObjectivesForDate(dateStr: string): DailyObjective[] {
+  let seed = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    seed += dateStr.charCodeAt(i);
+  }
+  
+  const pool: DailyObjective[] = [
+    { id: 'claim_coffee', text: '☕ Claim today\'s coffee', rewardType: 'token', rewardValue: 1 },
+    { id: 'write_gratitude', text: '📝 Write one Gratitude note', rewardType: 'warmth', rewardValue: 5 },
+    { id: 'write_note', text: '✍️ Write any note', rewardType: 'token', rewardValue: 1 },
+    { id: 'visit_discover', text: '🔍 Visit the Discover screen', rewardType: 'warmth', rewardValue: 5 },
+    { id: 'read_notes', text: '📖 Read 3 community notes', rewardType: 'warmth', rewardValue: 5 },
+  ];
+  
+  const obj1 = pool[0] as DailyObjective;
+  const idx2 = (seed % (pool.length - 1)) + 1;
+  const obj2 = pool[idx2] as DailyObjective;
+  
+  let idx3 = ((seed + 2) % (pool.length - 1)) + 1;
+  if (idx3 === idx2) {
+    idx3 = (idx3 % (pool.length - 1)) + 1;
+  }
+  const obj3 = pool[idx3] as DailyObjective;
+  
+  return [obj1, obj2, obj3];
+}
+
+async function checkAndCompleteObjective(user: User, objectiveId: string): Promise<boolean> {
+  const todayStr = getTodayDateString();
+  
+  if (user.objectivesDate !== todayStr) {
+    user.completedObjectivesToday = [];
+    user.readNotesCountToday = 0;
+    user.objectivesDate = todayStr;
+  }
+  
+  if (user.completedObjectivesToday.includes(objectiveId)) {
+    return false;
+  }
+  
+  const todayObjectives = getDailyObjectivesForDate(todayStr);
+  const targetObj = todayObjectives.find((o) => o.id === objectiveId);
+  if (!targetObj) return false;
+  
+  user.completedObjectivesToday.push(objectiveId);
+  
+  if (targetObj.rewardType === 'token') {
+    user.currentCoffeeTokens += targetObj.rewardValue;
+  } else if (targetObj.rewardType === 'warmth') {
+    user.totalWarmthContributed += targetObj.rewardValue;
+    try {
+      const cafeState = await RedisService.getCafeState();
+      cafeState.totalWarmth += targetObj.rewardValue;
+      await RedisService.saveUser(user);
+      await RedisService.incrementNotes(targetObj.rewardValue);
+    } catch (err) {
+      console.error('Failed to update global warmth in objective reward:', err);
+    }
+  }
+  
+  RedisService.addTimelineEvent(user, 'streak', `🎯 Completed Goal: ${targetObj.text}`);
+  return true;
 }
 
 function buildRoomsList(cafeState: CafeState): Room[] {
@@ -75,10 +141,6 @@ function generateContributionId(): string {
   }
 }
 
-/**
- * Helper to identify the current Reddit user from Devvit context.
- * Gracefully falls back to a temporary anonymous user for local/offline testing.
- */
 async function getCurrentUser(): Promise<{ userId: string; username: string }> {
   try {
     const rawUsername = await reddit.getCurrentUsername();
@@ -104,13 +166,11 @@ interface CreateContributionInput {
 async function createContribution(
   input: CreateContributionInput
 ): Promise<{ user: User; contribution: Contribution; cafeState: CafeState }> {
-  // 1. Validate Category
   const validCategories = Object.values(CONTRIBUTION_CATEGORIES) as string[];
   if (!validCategories.includes(input.category)) {
     throw new ApiError(400, `Invalid note category: "${input.category}"`);
   }
 
-  // 2. Validate Message Content
   const cleanMsg = input.messageText.trim();
   if (!cleanMsg) {
     throw new ApiError(400, 'Note message cannot be empty or whitespace only');
@@ -124,18 +184,15 @@ async function createContribution(
     throw new ApiError(404, `User profile not found for ID "${input.userId}"`);
   }
 
-  // 3. Prevent Negative Token Count
   if (user.currentCoffeeTokens < 1) {
     throw new ApiError(403, 'Insufficient coffee tokens available to complete this action');
   }
 
-  // Deduct token, increment user stats
   const warmth = 1;
   user.currentCoffeeTokens = Math.max(user.currentCoffeeTokens - 1, 0);
   user.totalNotesWritten += 1;
   user.totalWarmthContributed += warmth;
 
-  // Build contribution
   const now = Math.floor(Date.now() / 1000);
   const category = input.category as Contribution['category'];
   const isTimeCapsule = category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE;
@@ -152,24 +209,17 @@ async function createContribution(
     createdAt: now,
     warmthGiven: warmth,
     likes: 0,
+    likedBy: [],
+    targetDate: input.targetDate,
     isUnlocked,
-    // Legacy aliases
     userId: input.userId,
     text: cleanMsg,
     timestamp: now,
   };
 
-  if (isTimeCapsule && input.targetDate !== undefined) {
-    contribution.targetDate = input.targetDate;
-  }
-
-  // Persist contribution
   await RedisService.saveContribution(contribution);
-
-  // Update global cafe state (also auto-unlocks rooms)
   const cafeState = await RedisService.incrementNotes(warmth);
 
-  // Sync user's unlocked rooms and save
   user.unlockedRooms = cafeState.roomsUnlocked;
   await RedisService.saveUser(user);
 
@@ -194,21 +244,32 @@ api.get('/init', async (c) => {
 
   try {
     const { userId, username } = await getCurrentUser();
-
-    // Fetch or auto-create user
     const user = await RedisService.getOrCreateUser(userId, username);
 
-    // Fetch cafe state
     const cafeState = await RedisService.getCafeState();
-
-    // Build rooms list
     const rooms = buildRoomsList(cafeState);
 
-    // Check if coffee can be claimed
     const todayStr = getTodayDateString();
     const canClaimCoffee = await RedisService.canClaimCoffee(user.id, todayStr);
 
-    // Update user's unlocked rooms to reflect latest state
+    if (user.objectivesDate !== todayStr) {
+      user.completedObjectivesToday = [];
+      user.readNotesCountToday = 0;
+      user.objectivesDate = todayStr;
+      
+      if (cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.FIREPLACE) {
+        await RedisService.triggerAchievement(user, 'fireplace_open');
+      }
+      if (cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.BOOKSHELF) {
+        await RedisService.triggerAchievement(user, 'library_keeper');
+      }
+      if (cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.GARDEN) {
+        await RedisService.triggerAchievement(user, 'garden_wanderer');
+      }
+      
+      await RedisService.saveUser(user);
+    }
+
     user.unlockedRooms = cafeState.roomsUnlocked;
     await RedisService.saveUser(user);
 
@@ -221,6 +282,7 @@ api.get('/init', async (c) => {
         rooms,
         canClaimCoffee,
         progress: cafeStateToProgress(cafeState),
+        dailyObjectives: getDailyObjectivesForDate(todayStr),
       },
     });
   } catch (error) {
@@ -246,6 +308,14 @@ api.post('/claim', async (c) => {
       }, 400);
     }
 
+    const unlockedAchievements: string[] = [];
+    const firstCoffee = await RedisService.triggerAchievement(result.user, 'first_coffee');
+    if (firstCoffee) unlockedAchievements.push('first_coffee');
+
+    RedisService.addTimelineEvent(result.user, 'claim_coffee', '☕ Claimed daily coffee token');
+    await checkAndCompleteObjective(result.user, 'claim_coffee');
+    await RedisService.saveUser(result.user);
+
     return c.json<ClaimTokenResponse>({
       success: true,
       data: {
@@ -253,6 +323,7 @@ api.post('/claim', async (c) => {
         cafe: cafeState,
         tokenCount: result.user.currentCoffeeTokens,
         lastClaimedTimestamp: result.user.lastCoffeeClaim ?? 0,
+        unlockedAchievements,
       },
     });
   } catch (error) {
@@ -268,7 +339,6 @@ api.post('/contribution', async (c) => {
   try {
     const { userId, username } = await getCurrentUser();
 
-    // Body structure check
     let body: any;
     try {
       body = await c.req.json();
@@ -292,69 +362,50 @@ api.post('/contribution', async (c) => {
       targetDate: body.targetDate !== undefined ? Number(body.targetDate) : undefined,
     });
 
+    const unlockedAchievements: string[] = [];
+    const firstNote = await RedisService.triggerAchievement(result.user, 'first_note');
+    if (firstNote) unlockedAchievements.push('first_note');
+
+    if (result.user.totalWarmthContributed >= 10) {
+      const warmSoul = await RedisService.triggerAchievement(result.user, 'warm_soul');
+      if (warmSoul) unlockedAchievements.push('warm_soul');
+    }
+
+    if (result.cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.FIREPLACE) {
+      const unlockFireplace = await RedisService.triggerAchievement(result.user, 'fireplace_open');
+      if (unlockFireplace) unlockedAchievements.push('fireplace_open');
+    }
+    if (result.cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.BOOKSHELF) {
+      const unlockLibrary = await RedisService.triggerAchievement(result.user, 'library_keeper');
+      if (unlockLibrary) unlockedAchievements.push('library_keeper');
+    }
+    if (result.cafeState.totalWarmth >= ROOM_UNLOCK_THRESHOLDS.GARDEN) {
+      const unlockGarden = await RedisService.triggerAchievement(result.user, 'garden_wanderer');
+      if (unlockGarden) unlockedAchievements.push('garden_wanderer');
+    }
+
+    RedisService.addTimelineEvent(result.user, 'write_note', `📝 Left a note in the ${result.contribution.category} wall`);
+    await checkAndCompleteObjective(result.user, 'write_note');
+    if (result.contribution.category === CONTRIBUTION_CATEGORIES.GRATITUDE) {
+      await checkAndCompleteObjective(result.user, 'write_gratitude');
+    }
+
+    await RedisService.saveUser(result.user);
+
     return c.json<AddContributionResponse>({
       success: true,
       data: {
         contribution: result.contribution,
         cafe: result.cafeState,
         progress: cafeStateToProgress(result.cafeState),
-      },
-    });
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return c.json<ErrorResponse>({ success: false, error: error.message }, error.statusCode as any);
-    }
-    console.error('Contribution endpoint failure:', error);
-    return c.json<ErrorResponse>({ success: false, error: 'An unexpected error occurred while placing note' }, 500);
-  }
-});
-
-// ═════════════════════════════════════════════════════════════════════════
-// POST /api/spend (legacy alias)
-// ═════════════════════════════════════════════════════════════════════════
-api.post('/spend', async (c) => {
-  try {
-    const { userId, username } = await getCurrentUser();
-
-    let body: any;
-    try {
-      body = await c.req.json();
-    } catch {
-      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON request body' }, 400);
-    }
-
-    if (!body || typeof body !== 'object') {
-      return c.json<ErrorResponse>({ success: false, error: 'Request body must be a valid JSON object' }, 400);
-    }
-
-    if (body.text === undefined || body.category === undefined) {
-      return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters: text and category' }, 400);
-    }
-
-    const result = await createContribution({
-      userId,
-      username,
-      category: String(body.category),
-      messageText: String(body.text),
-      targetDate: body.targetDate !== undefined ? Number(body.targetDate) : undefined,
-    });
-
-    return c.json<SpendTokenResponse>({
-      success: true,
-      data: {
         user: result.user,
-        contribution: result.contribution,
-        cafe: result.cafeState,
-        tokenCount: result.user.currentCoffeeTokens,
-        progress: cafeStateToProgress(result.cafeState),
+        unlockedAchievements,
       },
     });
   } catch (error) {
-    if (error instanceof ApiError) {
-      return c.json<ErrorResponse>({ success: false, error: error.message }, error.statusCode as any);
-    }
-    console.error('Spend legacy endpoint failure:', error);
-    return c.json<ErrorResponse>({ success: false, error: 'An unexpected error occurred while spending token' }, 500);
+    console.error('Contribution server route failure:', error);
+    const code = error instanceof ApiError ? error.statusCode : 500;
+    return c.json<ErrorResponse>({ success: false, error: error instanceof Error ? error.message : 'Internal Server Error' }, code as any);
   }
 });
 
@@ -363,20 +414,30 @@ api.post('/spend', async (c) => {
 // ═════════════════════════════════════════════════════════════════════════
 api.get('/contributions', async (c) => {
   try {
-    const categoryFilter = c.req.query('category');
-    let list: Contribution[];
+    const filter = c.req.query('filter') || 'All';
+    let list: Contribution[] = [];
 
-    if (categoryFilter && categoryFilter !== 'All') {
-      const validCategories = Object.values(CONTRIBUTION_CATEGORIES) as string[];
-      if (!validCategories.includes(categoryFilter)) {
-        return c.json<ErrorResponse>({ success: false, error: `Invalid category filter: "${categoryFilter}"` }, 400);
+    const { userId } = await getCurrentUser();
+    const userProfile = await RedisService.getUser(userId);
+
+    if (filter === 'All' || filter === 'Newest') {
+      list = await RedisService.getRecentContributions(100);
+    } else if (filter === 'Popular') {
+      list = await RedisService.getRecentContributions(100);
+      list.sort((a, b) => (b.likes || 0) - (a.likes || 0));
+    } else if (filter === 'Favorites') {
+      const favorites = userProfile?.favorites || [];
+      const favList: Contribution[] = [];
+      for (const fid of favorites) {
+        const item = await RedisService.getContributionById(fid);
+        if (item) favList.push(item);
       }
-      list = await RedisService.getContributionsByCategory(categoryFilter, 50);
+      favList.sort((a, b) => b.createdAt - a.createdAt);
+      list = favList;
     } else {
-      list = await RedisService.getRecentContributions(50);
+      list = await RedisService.getContributionsByCategory(filter, 100);
     }
 
-    // Filter locked Time Capsules
     const now = Math.floor(Date.now() / 1000);
     const filtered = list.filter((item) => {
       if (item.category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE) {
@@ -419,9 +480,132 @@ api.get('/contribution/random', async (c) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════
+// POST /api/notes/:id/like
+// ═════════════════════════════════════════════════════════════════════════
+api.post('/notes/:id/like', async (c) => {
+  try {
+    const noteId = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    const result = await RedisService.likeContribution(userId, noteId);
+
+    if (!result.success) {
+      return c.json<ErrorResponse>({ success: false, error: 'Could not like note' }, 400);
+    }
+
+    const likerUser = await RedisService.getUser(userId);
+    if (likerUser) {
+      RedisService.addTimelineEvent(likerUser, 'like', `❤️ Liked a note`);
+      await RedisService.saveUser(likerUser);
+    }
+
+    return c.json<LikeResponse>({
+      success: true,
+      data: {
+        noteId,
+        likes: result.likes,
+        likedBy: result.likedBy,
+        cafe: await RedisService.getCafeState(),
+        user: likerUser!,
+        unlockedAchievements: result.unlockedAchievements,
+      },
+    });
+  } catch (error) {
+    console.error('Like note failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to process like request' }, 500);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// POST /api/notes/:id/favorite
+// ═════════════════════════════════════════════════════════════════════════
+api.post('/notes/:id/favorite', async (c) => {
+  try {
+    const noteId = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    const result = await RedisService.toggleFavorite(userId, noteId);
+
+    if (!result.success) {
+      return c.json<ErrorResponse>({ success: false, error: 'Could not update favorites' }, 400);
+    }
+
+    const user = await RedisService.getUser(userId);
+    return c.json<FavoriteResponse>({
+      success: true,
+      data: {
+        noteId,
+        favorites: result.favorites,
+        user: user!,
+      },
+    });
+  } catch (error) {
+    console.error('Favorite note failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to process favorite request' }, 500);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
+// POST /api/objectives/progress
+// ═════════════════════════════════════════════════════════════════════════
+api.post('/objectives/progress', async (c) => {
+  try {
+    const { userId } = await getCurrentUser();
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON' }, 400);
+    }
+
+    const action = body?.action;
+    if (!action) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing action parameter' }, 400);
+    }
+
+    const user = await RedisService.getUser(userId);
+    if (!user) {
+      return c.json<ErrorResponse>({ success: false, error: 'User not found' }, 404);
+    }
+
+    let updated = false;
+    if (action === 'visit_discover') {
+      updated = await checkAndCompleteObjective(user, 'visit_discover');
+    } else if (action === 'read_note') {
+      const todayStr = getTodayDateString();
+      if (user.objectivesDate !== todayStr) {
+        user.completedObjectivesToday = [];
+        user.readNotesCountToday = 0;
+        user.objectivesDate = todayStr;
+      }
+      
+      if (!user.completedObjectivesToday.includes('read_notes')) {
+        user.readNotesCountToday += 1;
+        if (user.readNotesCountToday >= 3) {
+          updated = await checkAndCompleteObjective(user, 'read_notes');
+        } else {
+          updated = true;
+        }
+      }
+    }
+
+    if (updated) {
+      await RedisService.saveUser(user);
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        user,
+      },
+    });
+  } catch (error) {
+    console.error('Objective progress failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to update objectives progress' }, 500);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════
 // Puzzle endpoints
 // ═════════════════════════════════════════════════════════════════════════
-
 api.post('/puzzle/submit', async (c) => {
   try {
     const { userId, username } = await getCurrentUser();
@@ -442,7 +626,6 @@ api.post('/puzzle/submit', async (c) => {
     }
 
     const todayStr = getTodayDateString();
-
     await RedisService.submitPuzzleScore(body.puzzleId, todayStr, username, Number(body.timeMs));
 
     const existingPB = await RedisService.getPersonalBest(userId, body.puzzleId);
@@ -452,41 +635,52 @@ api.post('/puzzle/submit', async (c) => {
     if (existingPB === null || Number(body.timeMs) < existingPB) {
       isNewPersonalBest = true;
       await RedisService.savePersonalBest(userId, body.puzzleId, Number(body.timeMs));
-      await RedisService.updateUser(userId, { puzzleHighScore: Number(body.timeMs) });
+      pbTime = Number(body.timeMs);
     } else {
       pbTime = existingPB;
     }
 
-    const leaderboard = await RedisService.getPuzzleLeaderboard(body.puzzleId, todayStr, 10);
+    const user = await RedisService.getUser(userId);
+    const unlockedAchievements: string[] = [];
+    if (user) {
+      user.puzzleHighScore = pbTime;
+      const unlockedPuzzle = await RedisService.triggerAchievement(user, 'puzzle_solver');
+      if (unlockedPuzzle) unlockedAchievements.push('puzzle_solver');
+      await RedisService.saveUser(user);
+    }
+
+    const lead = await RedisService.getPuzzleLeaderboard(body.puzzleId, todayStr, 10);
 
     return c.json<PuzzleSubmitResponse>({
       success: true,
       data: {
         personalBestTimeMs: pbTime,
         isNewPersonalBest,
-        leaderboard,
+        leaderboard: lead,
+        user: user!,
+        unlockedAchievements,
       },
     });
   } catch (error) {
-    console.error('Puzzle submit endpoint failure:', error);
+    console.error('Puzzle submit score server route failure:', error);
     return c.json<ErrorResponse>({ success: false, error: 'Failed to submit puzzle score' }, 500);
   }
 });
 
 api.get('/puzzle/leaderboard', async (c) => {
   try {
-    const puzzleId = c.req.query('puzzleId') ?? 'tangram_daily';
-    const dateStr = c.req.query('date') ?? getTodayDateString();
+    const puzzleId = c.req.query('puzzleId') || 'daily_tangram';
+    const dateStr = getTodayDateString();
+    const lead = await RedisService.getPuzzleLeaderboard(puzzleId, dateStr, 10);
 
-    const leaderboard = await RedisService.getPuzzleLeaderboard(puzzleId, dateStr, 10);
     return c.json<LeaderboardResponse>({
       success: true,
       data: {
-        leaderboard,
+        leaderboard: lead,
       },
     });
   } catch (error) {
-    console.error('Fetch leaderboard endpoint failure:', error);
-    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch leaderboard data' }, 500);
+    console.error('Fetch puzzle leaderboard route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch puzzle leaderboard' }, 500);
   }
 });

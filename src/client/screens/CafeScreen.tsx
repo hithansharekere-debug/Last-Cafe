@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { ProgressBar } from '../components/ProgressBar';
+import { CafeFloorPlan } from '../components/CafeFloorPlan';
 import { ROOM_UNLOCK_THRESHOLDS } from '../../shared/constants';
 import type { Room, User, CafeState, Contribution } from '../../shared/types';
 
@@ -202,47 +203,9 @@ export const CafeScreen = ({
         </div>
       </div>
 
-      {/* Unlocked Room Grid Overview */}
+      {/* Visual blueprint floor plan */}
       <div className="p-4 border-b border-[#2c160a] bg-[#eeded1]/10">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-serif font-bold text-xs text-[#2c160a] uppercase tracking-wider">
-            🗺 Unlocked Areas ({cafe.roomsUnlocked.length} / 5)
-          </h2>
-          <span className="font-mono text-[10px] text-[#5e463a] select-none">
-            👤 {cafe.totalVisitors} recent visitors
-          </span>
-        </div>
-        <div className="flex flex-col gap-2">
-          {rooms.map((room) => (
-            <div
-              key={room.id}
-              className={`flex items-center justify-between p-2.5 rounded border text-xs font-serif transition-all ${
-                room.isUnlocked
-                  ? 'bg-[#fdfaf2] border-[#2c160a] text-[#2c160a]'
-                  : 'bg-[#eeded1]/20 border-[#c8a285]/30 text-[#5e463a]/40'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-lg select-none">{room.isUnlocked ? ROOM_ICONS[room.id] : '🔒'}</span>
-                <div>
-                  <p className="font-bold">{room.name}</p>
-                  <p className="text-[10px] text-[#5e463a]/80 font-normal">
-                    {room.isUnlocked ? ROOM_DESCRIPTIONS[room.id] : `Requires ${room.threshold} warmth`}
-                  </p>
-                </div>
-              </div>
-              {room.isUnlocked ? (
-                <span className="font-mono text-[9px] bg-[#4a7c59] text-[#fdfaf2] px-1.5 py-0.5 rounded font-bold select-none">
-                  OPEN
-                </span>
-              ) : (
-                <span className="font-mono text-[9px] bg-[#c8a285]/20 text-[#5e463a] px-1.5 py-0.5 rounded select-none">
-                  {room.threshold}
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+        <CafeFloorPlan user={user} rooms={rooms} totalWarmth={cafe.totalWarmth} />
       </div>
 
       {/* Today's Contributions Feed */}

@@ -2,20 +2,28 @@ import { useEffect } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
 import { NoteCard } from '../components/NoteCard';
-import type { Contribution } from '../../shared/types';
+import type { Contribution, User } from '../../shared/types';
 
 interface CommunityTableScreenProps {
+  user: User | null;
   contributions: Contribution[];
   loading: boolean;
   onFetchContributions: () => void;
   onOpenComposer: () => void;
+  onLikeNote?: (id: string) => void;
+  onFavoriteNote?: (id: string) => void;
+  onReadNote?: () => void;
 }
 
 export const CommunityTableScreen = ({
+  user,
   contributions,
   loading,
   onFetchContributions,
   onOpenComposer,
+  onLikeNote,
+  onFavoriteNote,
+  onReadNote,
 }: CommunityTableScreenProps) => {
   useEffect(() => {
     onFetchContributions();
@@ -50,10 +58,19 @@ export const CommunityTableScreen = ({
           />
         ) : (
           contributions.map((contrib) => (
-            <NoteCard key={contrib.id} contribution={contrib} />
+            <NoteCard
+              key={contrib.id}
+              contribution={contrib}
+              isLiked={!!contrib.likedBy?.includes(user?.id || '')}
+              isFavorited={!!user?.favorites?.includes(contrib.id)}
+              onLike={onLikeNote ? () => onLikeNote(contrib.id) : undefined}
+              onFavorite={onFavoriteNote ? () => onFavoriteNote(contrib.id) : undefined}
+              onRead={onReadNote}
+            />
           ))
         )}
       </div>
     </div>
   );
 };
+

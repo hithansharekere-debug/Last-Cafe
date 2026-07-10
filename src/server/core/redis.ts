@@ -1,6 +1,6 @@
 import { redis } from '@devvit/web/server';
 import { ROOM_UNLOCK_THRESHOLDS } from '../../shared/constants';
-import type { User, Contribution, CafeState, LeaderboardEntry } from '../../shared/types';
+import type { User, Contribution, CafeState, LeaderboardEntry, TimelineEvent } from '../../shared/types';
 
 /**
  * Centralized Redis key generation.
@@ -32,6 +32,8 @@ export function buildUnlockedRooms(totalWarmth: number): string[] {
 // ─── Helper: create a default User ──────────────────────────────────────
 function createDefaultUser(userId: string, username: string): User {
   const now = Math.floor(Date.now() / 1000);
+  const d = new Date();
+  const dateStr = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
   return {
     id: userId,
     username,
@@ -48,6 +50,23 @@ function createDefaultUser(userId: string, username: string): User {
     tokenCount: 1,
     contributionCount: 0,
     lastClaimedTimestamp: null,
+
+    // Phase 3C
+    currentStreak: 1,
+    longestStreak: 1,
+    achievements: [],
+    completedObjectivesToday: [],
+    objectivesDate: dateStr,
+    readNotesCountToday: 0,
+    timeline: [
+      {
+        id: `t_${now}_init`,
+        type: 'streak',
+        title: '🌱 Stepped inside the cafe for the first time',
+        timestamp: now,
+      }
+    ],
+    favorites: [],
   };
 }
 
@@ -68,8 +87,29 @@ function syncUserLegacy(user: User): User {
   user.tokenCount = user.currentCoffeeTokens;
   user.contributionCount = user.totalNotesWritten;
   user.lastClaimedTimestamp = user.lastCoffeeClaim;
+
+  // Phase 3C fallbacks
+  if (user.currentStreak === undefined) user.currentStreak = 1;
+  if (user.longestStreak === undefined) user.longestStreak = 1;
+  if (!user.achievements) user.achievements = [];
+  if (!user.completedObjectivesToday) user.completedObjectivesToday = [];
+  if (!user.objectivesDate) user.objectivesDate = '';
+  if (user.readNotesCountToday === undefined) user.readNotesCountToday = 0;
+  if (!user.timeline) user.timeline = [];
+  if (!user.favorites) user.favorites = [];
   return user;
 }
+
+// ─── Helper: sync legacy fields on a Contribution object ────────────────
+function syncContributionLegacy(contrib: Contribution): Contribution {
+  if (contrib.likes === undefined) contrib.likes = 0;
+  if (!contrib.likedBy) contrib.likedBy = [];
+  contrib.text = contrib.message;
+  contrib.userId = contrib.authorId;
+  contrib.timestamp = contrib.createdAt;
+  return contrib;
+}
+
 
 // ─── Helper: safe JSON parse ────────────────────────────────────────────
 function safeParse<T>(raw: string | undefined | null, fallback: T): T {
@@ -106,13 +146,53 @@ export const RedisService = {
   async getOrCreateUser(userId: string, username: string): Promise<User> {
     try {
       let user = await this.getUser(userId);
+      const now = Math.floor(Date.now() / 1000);
       if (!user) {
         user = createDefaultUser(userId, username);
         await this.saveUser(user);
         await this.incrementVisitors();
       } else {
-        user.lastVisit = Math.floor(Date.now() / 1000);
-        user.visitCount += 1;
+        const lastVisitDate = new Date(user.lastVisit * 1000);
+        const todayDate = new Date();
+        
+        const lastVisitStr = `${lastVisitDate.getUTCFullYear()}-${String(lastVisitDate.getUTCMonth() + 1).padStart(2, '0')}-${String(lastVisitDate.getUTCDate()).padStart(2, '0')}`;
+        const todayStr = `${todayDate.getUTCFullYear()}-${String(todayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(todayDate.getUTCDate()).padStart(2, '0')}`;
+        
+        if (lastVisitStr !== todayStr) {
+          user.visitCount += 1;
+          
+          // Check if last visit was yesterday to increment streak
+          const oneDayMs = 24 * 60 * 60 * 1000;
+          const yesterdayDate = new Date(Date.now() - oneDayMs);
+          const yesterdayStr = `${yesterdayDate.getUTCFullYear()}-${String(yesterdayDate.getUTCMonth() + 1).padStart(2, '0')}-${String(yesterdayDate.getUTCDate()).padStart(2, '0')}`;
+          
+          if (lastVisitStr === yesterdayStr) {
+            user.currentStreak += 1;
+            user.longestStreak = Math.max(user.longestStreak, user.currentStreak);
+            
+            // Milestone check
+            const milestones = [3, 7, 14, 30];
+            if (milestones.includes(user.currentStreak)) {
+              let bonus = 1;
+              if (user.currentStreak === 7) bonus = 2;
+              if (user.currentStreak === 14) bonus = 3;
+              if (user.currentStreak === 30) bonus = 5;
+              user.currentCoffeeTokens += bonus;
+              this.addTimelineEvent(user, 'streak', `🔥 Reached a ${user.currentStreak}-day visit streak! (+${bonus} Coffee Tokens)`);
+            }
+          } else {
+            // Streak broken
+            user.currentStreak = 1;
+          }
+        }
+        
+        user.lastVisit = now;
+        
+        // Trigger Regular Visitor achievement if visitCount >= 7
+        if (user.visitCount >= 7) {
+          await this.triggerAchievement(user, 'regular_visitor');
+        }
+        
         await this.saveUser(user);
       }
       return syncUserLegacy(user);
@@ -280,7 +360,8 @@ export const RedisService = {
   async getContribution(id: string): Promise<Contribution | null> {
     try {
       const raw = await redis.get(RedisKeys.contribution(id));
-      return safeParse<Contribution | null>(raw, null);
+      const parsed = safeParse<Contribution | null>(raw, null);
+      return parsed ? syncContributionLegacy(parsed) : null;
     } catch (error) {
       console.error(`Redis failure in getContribution for ID "${id}":`, error);
       return null;
@@ -429,6 +510,122 @@ export const RedisService = {
       await redis.set(RedisKeys.personalBest(userId), JSON.stringify(data));
     } catch (error) {
       console.error(`Redis failure in savePersonalBest for user "${userId}" on "${puzzleId}":`, error);
+    }
+  },
+
+  addTimelineEvent(user: User, type: TimelineEvent['type'], title: string): void {
+    if (!user.timeline) user.timeline = [];
+    const now = Math.floor(Date.now() / 1000);
+    user.timeline.unshift({
+      id: `t_${now}_${Math.random().toString(36).substring(2, 7)}`,
+      type,
+      title,
+      timestamp: now,
+    });
+    if (user.timeline.length > 20) {
+      user.timeline = user.timeline.slice(0, 20);
+    }
+  },
+
+  async triggerAchievement(user: User, id: string): Promise<boolean> {
+    if (!user.achievements) user.achievements = [];
+    if (!user.achievements.includes(id)) {
+      user.achievements.push(id);
+      const titles: Record<string, string> = {
+        first_coffee: 'First Coffee ☕',
+        first_note: 'First Note 📝',
+        warm_soul: 'Warm Soul ❤️',
+        regular_visitor: 'Regular Visitor 📚',
+        community_helper: 'Community Helper 🌿',
+        fireplace_open: 'Fireplace Open 🏡',
+        library_keeper: 'Library Keeper 📖',
+        garden_wanderer: 'Garden Wanderer 🌸',
+        puzzle_solver: 'Puzzle Solver 🧩',
+      };
+      const title = titles[id] || id;
+      this.addTimelineEvent(user, 'achievement', `🏆 Unlocked Achievement: ${title}`);
+      return true;
+    }
+    return false;
+  },
+
+  async likeContribution(userId: string, noteId: string): Promise<{ success: boolean; likes: number; likedBy: string[]; unlockedAchievements: string[]; authorUser: User | null; globalWarmth: number }> {
+    try {
+      const contrib = await this.getContribution(noteId);
+      if (!contrib) {
+        return { success: false, likes: 0, likedBy: [], unlockedAchievements: [], authorUser: null, globalWarmth: 0 };
+      }
+      if (!contrib.likedBy) contrib.likedBy = [];
+      if (contrib.likedBy.includes(userId)) {
+        return { success: false, likes: contrib.likes, likedBy: contrib.likedBy, unlockedAchievements: [], authorUser: null, globalWarmth: 0 };
+      }
+      
+      contrib.likedBy.push(userId);
+      contrib.likes += 1;
+      await this.saveContribution(contrib);
+      
+      // Increment global warmth
+      const cafeState = await this.getCafeState();
+      cafeState.totalWarmth += 1;
+      await redis.set(RedisKeys.cafeState(), JSON.stringify(cafeState));
+      
+      // Award warmth to note author
+      const author = await this.getUser(contrib.authorId);
+      const unlockedAchievements: string[] = [];
+      if (author) {
+        author.totalWarmthContributed += 1;
+        
+        // Count likes received
+        const authorNotes = await this.getRecentContributions(100);
+        let totalLikes = 0;
+        for (const note of authorNotes) {
+          if (note.authorId === author.id) {
+            totalLikes += note.likes;
+          }
+        }
+        
+        if (totalLikes >= 10) {
+          const unlocked = await this.triggerAchievement(author, 'community_helper');
+          if (unlocked) unlockedAchievements.push('community_helper');
+        }
+        if (author.totalWarmthContributed >= 10) {
+          const unlocked = await this.triggerAchievement(author, 'warm_soul');
+          if (unlocked) unlockedAchievements.push('warm_soul');
+        }
+        
+        await this.saveUser(author);
+      }
+      
+      return {
+        success: true,
+        likes: contrib.likes,
+        likedBy: contrib.likedBy,
+        unlockedAchievements,
+        authorUser: author,
+        globalWarmth: cafeState.totalWarmth,
+      };
+    } catch (error) {
+      console.error(`Redis failure in likeContribution for user "${userId}" on note "${noteId}":`, error);
+      return { success: false, likes: 0, likedBy: [], unlockedAchievements: [], authorUser: null, globalWarmth: 0 };
+    }
+  },
+
+  async toggleFavorite(userId: string, noteId: string): Promise<{ success: boolean; favorites: string[] }> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return { success: false, favorites: [] };
+      if (!user.favorites) user.favorites = [];
+      const index = user.favorites.indexOf(noteId);
+      if (index === -1) {
+        user.favorites.push(noteId);
+      } else {
+        user.favorites.splice(index, 1);
+      }
+      await this.saveUser(user);
+      return { success: true, favorites: user.favorites };
+    } catch (error) {
+      console.error(`Redis failure in toggleFavorite for user "${userId}" on note "${noteId}":`, error);
+      return { success: false, favorites: [] };
     }
   },
 };

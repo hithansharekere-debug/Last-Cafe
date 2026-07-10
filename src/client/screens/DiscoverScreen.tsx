@@ -1,53 +1,48 @@
 import { useEffect } from 'react';
-import { Card } from '../components/Card';
 import { EmptyState } from '../components/EmptyState';
 import { LoadingState } from '../components/LoadingState';
-import { CONTRIBUTION_CATEGORIES } from '../../shared/constants';
-import type { Contribution } from '../../shared/types';
+import { NoteCard } from '../components/NoteCard';
+import type { Contribution, User } from '../../shared/types';
 
 interface DiscoverScreenProps {
+  user: User | null;
   contributions: Contribution[];
   loading: boolean;
   onFetchContributions: (category: string) => void;
   activeFilter: string;
   onFilterChange: (filter: string) => void;
+  onLikeNote?: (id: string) => void;
+  onFavoriteNote?: (id: string) => void;
+  onReadNote?: () => void;
 }
 
 const FILTER_OPTIONS: { label: string; value: string; icon: string }[] = [
   { label: 'All', value: 'All', icon: '🗂' },
-  { label: 'Memories', value: 'Memory', icon: '💭' },
-  { label: 'Advice', value: 'Advice', icon: '🌿' },
+  { label: 'Newest', value: 'Newest', icon: '🕒' },
+  { label: 'Popular', value: 'Popular', icon: '🔥' },
+  { label: 'Favorites', value: 'Favorites', icon: '⭐' },
   { label: 'Gratitude', value: 'Gratitude', icon: '🙏' },
-  { label: 'Recs', value: 'Recommendation', icon: '📚' },
+  { label: 'Dreams', value: 'Dream', icon: '🌌' },
+  { label: 'Advice', value: 'Advice', icon: '🌿' },
+  { label: 'Memories', value: 'Memory', icon: '💭' },
+  { label: 'Questions', value: 'Question', icon: '❓' },
   { label: 'Secrets', value: 'Secret', icon: '🤫' },
+  { label: 'Recs', value: 'Recommendation', icon: '📚' },
   { label: 'Capsules', value: 'Time Capsule', icon: '⏳' },
 ];
 
-function formatRelativeTime(timestamp: number): string {
-  const diff = Math.floor(Date.now() / 1000) - timestamp;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  return `${Math.floor(diff / 86400)}d ago`;
-}
-
-const CATEGORY_PALETTE: Record<string, { bg: string; text: string; border: string }> = {
-  Memory: { bg: '#d4af37', text: '#fdfaf2', border: '#2c160a' },
-  Advice: { bg: '#4a7c59', text: '#fdfaf2', border: '#2c160a' },
-  Gratitude: { bg: '#8e5a36', text: '#fdfaf2', border: '#2c160a' },
-  Recommendation: { bg: '#5c371d', text: '#fdfaf2', border: '#2c160a' },
-  Secret: { bg: '#2c160a', text: '#c8a285', border: '#c8a285' },
-  'Time Capsule': { bg: '#9b4618', text: '#fdfaf2', border: '#2c160a' },
-};
-
 export const DiscoverScreen = ({
+  user,
   contributions,
   loading,
   onFetchContributions,
   activeFilter,
   onFilterChange,
+  onLikeNote,
+  onFavoriteNote,
+  onReadNote,
 }: DiscoverScreenProps) => {
-  // Pull current active filter contributions on mount
+  // Pull current active filter contributions on mount or when filter changes
   useEffect(() => {
     onFetchContributions(activeFilter);
   }, [onFetchContributions, activeFilter]);
@@ -92,66 +87,31 @@ export const DiscoverScreen = ({
         ) : contributions.length === 0 ? (
           <EmptyState
             icon="🔍"
-            title="Nothing Found"
+            title={activeFilter === 'Favorites' ? 'No Favorites Yet' : 'Nothing Found'}
             message={
               activeFilter === 'All'
                 ? 'The cafe is waiting for its first visitor.'
+                : activeFilter === 'Favorites'
+                ? 'Star a note to save it here for easy reading.'
                 : `No ${activeFilter.toLowerCase()} notes yet. Be the first to leave one.`
             }
           />
         ) : (
           <div className="flex flex-col gap-3 p-4">
             {contributions.map((contrib) => (
-              <DiscoverCard key={contrib.id} contribution={contrib} />
+              <NoteCard
+                key={contrib.id}
+                contribution={contrib}
+                isLiked={!!contrib.likedBy?.includes(user?.id || '')}
+                isFavorited={!!user?.favorites?.includes(contrib.id)}
+                onLike={onLikeNote ? () => onLikeNote(contrib.id) : undefined}
+                onFavorite={onFavoriteNote ? () => onFavoriteNote(contrib.id) : undefined}
+                onRead={onReadNote}
+              />
             ))}
           </div>
         )}
       </div>
     </div>
-  );
-};
-
-const DiscoverCard = ({ contribution }: { contribution: Contribution }) => {
-  const palette = CATEGORY_PALETTE[contribution.category] ?? {
-    bg: '#5c371d',
-    text: '#fdfaf2',
-    border: '#2c160a',
-  };
-
-  return (
-    <Card variant="parchment" elevation="low">
-      <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: palette.bg }} />
-      <div className="flex flex-col gap-2 pt-1">
-        <div className="flex items-center justify-between">
-          <span
-            className="font-mono text-[10px] uppercase tracking-widest px-2 py-0.5 rounded border font-bold select-none"
-            style={{ backgroundColor: palette.bg, color: palette.text, borderColor: palette.border }}
-          >
-            {contribution.category}
-          </span>
-          <span className="font-mono text-[10px] text-[#5e463a] select-none">
-            {formatRelativeTime(contribution.createdAt || contribution.timestamp)}
-          </span>
-        </div>
-
-        <p className="font-handwritten text-sm text-[#26140b] leading-relaxed">
-          "{contribution.message || contribution.text}"
-        </p>
-
-        {contribution.category === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && contribution.targetDate !== undefined && (
-          <p className="font-serif text-[10px] text-[#9b4618] italic select-none">
-            ⏳ Opened on {new Date(contribution.targetDate * 1000).toLocaleDateString()}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#c8a285] text-[10px] text-[#5e463a] font-serif">
-          <span className="italic">— {contribution.username}</span>
-          <div className="flex items-center gap-2 font-mono select-none">
-            <span>🔥 {contribution.warmthGiven || 1}</span>
-            <span>❤️ {contribution.likes || 0}</span>
-          </div>
-        </div>
-      </div>
-    </Card>
   );
 };

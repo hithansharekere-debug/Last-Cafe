@@ -14,6 +14,16 @@ export interface User {
   unlockedRooms: string[];    // Room IDs the user has witnessed unlock
   puzzleHighScore: number | null; // Best puzzle time in ms, null if never played
 
+  // Phase 3C fields
+  currentStreak: number;
+  longestStreak: number;
+  achievements: string[];     // Unlocked achievement IDs
+  completedObjectivesToday: string[]; // Completed daily objective IDs
+  objectivesDate: string;     // YYYY-MM-DD
+  readNotesCountToday: number;
+  timeline: TimelineEvent[];
+  favorites: string[];        // Favorited note IDs
+
   // Aliases kept for backwards compatibility with existing screens
   /** @deprecated Use joinedAt */
   joinedDate: number;
@@ -23,6 +33,20 @@ export interface User {
   contributionCount: number;
   /** @deprecated Use lastCoffeeClaim */
   lastClaimedTimestamp: number | null;
+}
+
+export interface TimelineEvent {
+  id: string;
+  type: 'claim_coffee' | 'write_note' | 'unlock_room' | 'achievement' | 'streak' | 'like';
+  title: string;
+  timestamp: number;
+}
+
+export interface DailyObjective {
+  id: string;
+  text: string;
+  rewardType: 'token' | 'warmth';
+  rewardValue: number;
 }
 
 // ─── Contribution ───────────────────────────────────────────────────────
@@ -35,6 +59,7 @@ export interface Contribution {
   createdAt: number;          // Unix timestamp
   warmthGiven: number;        // How much warmth this note contributed (default 1)
   likes: number;
+  likedBy: string[];          // User IDs who liked this note
 
   // Time capsule fields
   targetDate?: number;        // Unix timestamp — only for Time Capsules
@@ -109,6 +134,7 @@ export interface InitResponse {
     rooms: Room[];
     canClaimCoffee: boolean;
     progress: CafeProgress;
+    dailyObjectives: DailyObjective[];
   };
 }
 
@@ -119,6 +145,7 @@ export interface ClaimTokenResponse {
     cafe: CafeState;
     tokenCount: number;
     lastClaimedTimestamp: number;
+    unlockedAchievements: string[]; // Achievement IDs unlocked during this action
   };
   error?: string;
 }
@@ -141,6 +168,8 @@ export interface AddContributionResponse {
     contribution: Contribution;
     cafe: CafeState;
     progress: CafeProgress;
+    user: User;
+    unlockedAchievements: string[]; // Achievement IDs unlocked during this action
   };
   error?: string;
 }
@@ -168,6 +197,8 @@ export interface PuzzleSubmitResponse {
     personalBestTimeMs: number;
     isNewPersonalBest: boolean;
     leaderboard: LeaderboardEntry[];
+    user: User;
+    unlockedAchievements: string[];
   };
   error?: string;
 }
@@ -179,3 +210,27 @@ export interface LeaderboardResponse {
   };
   error?: string;
 }
+
+export interface LikeResponse {
+  success: boolean;
+  data?: {
+    noteId: string;
+    likes: number;
+    likedBy: string[];
+    cafe: CafeState;
+    user: User;
+    unlockedAchievements: string[]; // If liking completes an achievement for note author
+  };
+  error?: string;
+}
+
+export interface FavoriteResponse {
+  success: boolean;
+  data?: {
+    noteId: string;
+    favorites: string[];
+    user: User;
+  };
+  error?: string;
+}
+

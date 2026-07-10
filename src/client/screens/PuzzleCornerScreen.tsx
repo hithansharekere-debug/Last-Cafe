@@ -18,9 +18,18 @@ export const PuzzleCornerScreen = ({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     setIsLoading(true);
-    onFetchLeaderboard('tangram_daily');
-    setIsLoading(false);
+    const run = async () => {
+      await onFetchLeaderboard('tangram_daily');
+      if (active) {
+        setIsLoading(false);
+      }
+    };
+    void run();
+    return () => {
+      active = false;
+    };
   }, [onFetchLeaderboard]);
 
   if (isLoading) {
