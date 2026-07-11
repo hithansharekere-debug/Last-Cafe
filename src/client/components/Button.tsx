@@ -15,22 +15,22 @@ export const Button = ({
   disabled,
   ...props
 }: ButtonProps) => {
-  // Base cozy styles
-  const baseStyle = 'inline-flex items-center justify-center font-serif rounded border-2 border-[#2c160a] transition-all duration-150 select-none shadow-[2px_2px_0px_rgba(44,22,10,1)] active:translate-y-0.5 active:shadow-[1px_1px_0px_rgba(44,22,10,1)] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:translate-y-0';
+  // Base cozy styles - larger click targets, rounded corners, soft presses
+  const baseStyle = 'inline-flex items-center justify-center font-serif rounded-md border-2 border-[#2c160a] transition-all duration-150 select-none shadow-[3px_3px_0px_#2c160a] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:translate-x-0 disabled:active:shadow-[3px_3px_0px_#2c160a]';
   
   // Size styles
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-xs tracking-wider',
-    md: 'px-5 py-2 text-sm tracking-wide',
-    lg: 'px-7 py-3 text-base font-bold tracking-wider',
+    sm: 'px-4 py-2 text-xs tracking-wider font-bold',
+    md: 'px-5.5 py-2.5 text-sm tracking-wide font-bold',
+    lg: 'px-7 py-3.5 text-base font-bold tracking-wider',
   };
 
   // Variant styles
   const variantStyles = {
-    primary: 'bg-[#cf7929] hover:bg-[#a85012] text-[#fdfaf2]',
-    secondary: 'bg-[#eeded1] hover:bg-[#c8a285] text-[#2c160a]',
-    outline: 'bg-transparent hover:bg-[#f7edd7]/40 text-[#2c160a]',
-    wood: 'bg-[#5c371d] hover:bg-[#371e0c] text-[#fdfaf2] border-[#2c160a]',
+    primary: 'bg-[#cf7929] hover:bg-[#b05c14] text-[#fdfaf2] hover:scale-[1.01]',
+    secondary: 'bg-[#eeded1] hover:bg-[#e2cbba] text-[#2c160a] hover:scale-[1.01]',
+    outline: 'bg-transparent hover:bg-[#f7edd7]/50 text-[#2c160a]',
+    wood: 'bg-[#5c371d] hover:bg-[#3d200e] text-[#eeded1] border-[#2c160a] hover:scale-[1.01]',
   };
 
   const widthStyle = fullWidth ? 'w-full' : 'w-auto';

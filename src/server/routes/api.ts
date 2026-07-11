@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { context, reddit } from '@devvit/web/server';
 import { RedisService, buildUnlockedRooms } from '../core/redis';
-import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES } from '../../shared/constants';
+import { ROOM_UNLOCK_THRESHOLDS, CONTRIBUTION_CATEGORIES, getDailyPuzzleForDate } from '../../shared/constants';
 import type {
   InitResponse,
   ClaimTokenResponse,
@@ -18,6 +18,9 @@ import type {
   DailyObjective,
   LikeResponse,
   FavoriteResponse,
+  CommunityPuzzle,
+  PuzzlesListResponse,
+  PuzzleSolveResponse,
 } from '../../shared/types';
 
 export const api = new Hono();
@@ -682,5 +685,321 @@ api.get('/puzzle/leaderboard', async (c) => {
   } catch (error) {
     console.error('Fetch puzzle leaderboard route failure:', error);
     return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch puzzle leaderboard' }, 500);
+  }
+});
+
+// ─── Phase 5: Puzzles Endpoints ─────────────────────────────────────────
+
+api.get('/puzzles', async (c) => {
+  try {
+    const filter = c.req.query('filter') || 'All';
+    let list: CommunityPuzzle[] = [];
+    const { userId } = await getCurrentUser();
+    const userProfile = await RedisService.getUser(userId);
+
+    if (filter === 'All') {
+      list = await RedisService.getRecentPuzzles(100);
+    } else if (filter === 'Favorites') {
+      const favorites = userProfile?.favorites || [];
+      const favList: CommunityPuzzle[] = [];
+      for (const fid of favorites) {
+        const p = await RedisService.getPuzzle(fid);
+        if (p) favList.push(p);
+      }
+      favList.sort((a, b) => b.createdAt - a.createdAt);
+      list = favList;
+    } else if (['Easy', 'Medium', 'Hard'].includes(filter)) {
+      const all = await RedisService.getRecentPuzzles(100);
+      list = all.filter(p => p.difficulty === filter);
+    } else {
+      list = await RedisService.getPuzzlesByCategory(filter, 100);
+    }
+    return c.json<PuzzlesListResponse>({ success: true, data: { puzzles: list } });
+  } catch (error) {
+    console.error('Fetch puzzles server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch community mysteries' }, 500);
+  }
+});
+
+api.post('/puzzles', async (c) => {
+  try {
+    const { userId, username } = await getCurrentUser();
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
+    }
+
+    const { title, description, puzzleText, hint, answer, difficulty, category } = body;
+    if (!title || !puzzleText || !answer || !difficulty || !category) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters to publish puzzle' }, 400);
+    }
+
+    const user = await RedisService.getUser(userId);
+    if (!user) return c.json<ErrorResponse>({ success: false, error: 'User profile not found' }, 404);
+    if (user.currentCoffeeTokens < 1) {
+      return c.json<ErrorResponse>({ success: false, error: 'Insufficient coffee tokens. Claim daily coffee first.' }, 403);
+    }
+
+    user.currentCoffeeTokens = Math.max(user.currentCoffeeTokens - 1, 0);
+    user.totalNotesWritten += 1; // Increment note/creation counts for achievements
+    user.reputation += 10;       // Creator reputation reward!
+
+    const puzzleId = `puzzle_${Math.floor(Date.now() / 1000)}_${Math.random().toString(36).substring(2, 7)}`;
+    const now = Math.floor(Date.now() / 1000);
+    const puzzle: CommunityPuzzle = {
+      id: puzzleId,
+      creatorId: userId,
+      creatorName: username,
+      title: String(title).trim().substring(0, 50),
+      description: String(description || '').trim().substring(0, 200),
+      puzzleText: String(puzzleText).trim().substring(0, 500),
+      hint: String(hint || '').trim().substring(0, 150),
+      answer: String(answer).trim().toLowerCase(),
+      difficulty: difficulty as any,
+      category: category as any,
+      createdAt: now,
+      solveCount: 0,
+      likes: 0,
+      likedBy: [],
+      favorites: 0,
+      favoritedBy: [],
+    };
+
+    await RedisService.savePuzzle(puzzle);
+    
+    // Increment Cafe State warmth by 1 for new puzzle contributions
+    const cafeState = await RedisService.getCafeState();
+    cafeState.totalWarmth += 1;
+    await RedisService.saveCafeState(cafeState);
+
+    user.unlockedRooms = cafeState.roomsUnlocked;
+    
+    // Achievements & Timeline log
+    const unlockedAchievements: string[] = [];
+    const firstNote = await RedisService.triggerAchievement(user, 'first_note');
+    if (firstNote) unlockedAchievements.push('first_note');
+    
+    RedisService.addTimelineEvent(user, 'write_note', `🧩 Created Community Puzzle: ${puzzle.title}`);
+    await checkAndCompleteObjective(user, 'write_note');
+    await RedisService.saveUser(user);
+
+    return c.json({
+      success: true,
+      data: {
+        puzzle,
+        user,
+        unlockedAchievements,
+      }
+    });
+  } catch (error) {
+    console.error('Create puzzle server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to publish puzzle' }, 500);
+  }
+});
+
+api.post('/puzzles/:id/solve', async (c) => {
+  try {
+    const puzzleId = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
+    }
+
+    const submitted = String(body.answer || '').trim().toLowerCase();
+    const puzzle = await RedisService.getPuzzle(puzzleId);
+    if (!puzzle) return c.json<ErrorResponse>({ success: false, error: 'Puzzle not found' }, 404);
+
+    if (puzzle.creatorId === userId) {
+      return c.json<ErrorResponse>({ success: false, error: 'You cannot solve your own puzzle.' }, 400);
+    }
+
+    const user = await RedisService.getUser(userId);
+    if (!user) return c.json<ErrorResponse>({ success: false, error: 'User profile not found' }, 404);
+
+    if (!user.solvedPuzzles) user.solvedPuzzles = [];
+    if (user.solvedPuzzles.includes(puzzleId)) {
+      return c.json<ErrorResponse>({ success: false, error: 'You have already solved this mystery.' }, 400);
+    }
+
+    if (puzzle.answer !== submitted) {
+      return c.json<ErrorResponse>({ success: false, error: 'Incorrect answer. The mystery remains unsolved...' }, 400);
+    }
+
+    // Solve successful!
+    user.solvedPuzzles.push(puzzleId);
+    user.reputation += 5; // Solver reputation reward!
+    
+    puzzle.solveCount += 1;
+    await RedisService.savePuzzle(puzzle);
+
+    // Creator reputation reward!
+    const creator = await RedisService.getUser(puzzle.creatorId);
+    if (creator) {
+      creator.reputation += 10;
+      RedisService.addTimelineEvent(creator, 'like', `💡 Your puzzle "${puzzle.title}" was solved! (+10 reputation)`);
+      await RedisService.saveUser(creator);
+    }
+
+    // Add warmth to Cafe State
+    const cafeState = await RedisService.getCafeState();
+    cafeState.totalWarmth += 5;
+    await RedisService.saveCafeState(cafeState);
+
+    user.unlockedRooms = cafeState.roomsUnlocked;
+    
+    // Achievements & Goals completion checks
+    const unlockedAchievements: string[] = [];
+    const unlockedPuzzle = await RedisService.triggerAchievement(user, 'puzzle_solver');
+    if (unlockedPuzzle) unlockedAchievements.push('puzzle_solver');
+
+    RedisService.addTimelineEvent(user, 'like', `💡 Solved Puzzle: ${puzzle.title} (+5 reputation)`);
+    await checkAndCompleteObjective(user, 'read_notes'); // Solving a community puzzle counts toward reading/exploring notes!
+    await RedisService.saveUser(user);
+
+    return c.json<PuzzleSolveResponse>({
+      success: true,
+      data: {
+        puzzle,
+        user,
+        unlockedAchievements,
+      }
+    });
+  } catch (error) {
+    console.error('Solve puzzle server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to validate puzzle answer' }, 500);
+  }
+});
+
+api.post('/puzzles/:id/like', async (c) => {
+  try {
+    const puzzleId = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    const result = await RedisService.likePuzzle(userId, puzzleId);
+    if (!result.success) {
+      return c.json<ErrorResponse>({ success: false, error: 'Failed to like puzzle. You might have liked it already.' }, 400);
+    }
+    return c.json({
+      success: true,
+      data: {
+        puzzleId,
+        likes: result.likes,
+        likedBy: result.likedBy,
+        user: (await RedisService.getUser(userId))!,
+      }
+    });
+  } catch (error) {
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to like puzzle' }, 500);
+  }
+});
+
+api.post('/puzzles/:id/favorite', async (c) => {
+  try {
+    const puzzleId = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    const result = await RedisService.toggleFavoritePuzzle(userId, puzzleId);
+    if (!result.success) return c.json<ErrorResponse>({ success: false, error: 'Failed to toggle favorite' }, 400);
+    return c.json({
+      success: true,
+      data: {
+        puzzleId,
+        favorites: result.favorites,
+        user: (await RedisService.getUser(userId))!,
+      }
+    });
+  } catch (error) {
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to toggle favorite' }, 500);
+  }
+});
+
+api.get('/puzzle/daily', async (c) => {
+  try {
+    const { userId } = await getCurrentUser();
+    const todayStr = getTodayDateString();
+    const puzzle = getDailyPuzzleForDate(todayStr);
+    const solved = await RedisService.hasSolvedDaily(userId, todayStr);
+    return c.json({
+      success: true,
+      data: {
+        puzzle: {
+          id: puzzle.id,
+          title: puzzle.title,
+          question: puzzle.question,
+          hint: puzzle.hint,
+          difficulty: puzzle.difficulty,
+        },
+        solved,
+      }
+    });
+  } catch (error) {
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch daily puzzle' }, 500);
+  }
+});
+
+api.post('/puzzle/daily/solve', async (c) => {
+  try {
+    const { userId } = await getCurrentUser();
+    const todayStr = getTodayDateString();
+    
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
+    }
+    const submitted = String(body.answer || '').trim().toLowerCase();
+
+    const solved = await RedisService.hasSolvedDaily(userId, todayStr);
+    if (solved) return c.json<ErrorResponse>({ success: false, error: 'You have already solved today\'s daily puzzle.' }, 400);
+
+    const puzzle = getDailyPuzzleForDate(todayStr);
+    if (puzzle.answer !== submitted) {
+      return c.json<ErrorResponse>({ success: false, error: 'Incorrect answer. Try again.' }, 400);
+    }
+
+    // Solve daily puzzle successfully!
+    const user = await RedisService.getUser(userId);
+    if (!user) return c.json<ErrorResponse>({ success: false, error: 'User profile not found' }, 404);
+
+    await RedisService.setSolvedDaily(userId, todayStr);
+    
+    // Track solved dates on user profile
+    if (!user.dailySolvedDates) user.dailySolvedDates = [];
+    if (!user.dailySolvedDates.includes(todayStr)) {
+      user.dailySolvedDates.push(todayStr);
+    }
+
+    // Rewards
+    user.currentCoffeeTokens += 1; // +1 Coffee Token!
+    user.reputation += 20;         // +20 Reputation!
+    
+    const cafeState = await RedisService.getCafeState();
+    cafeState.totalWarmth += 10;   // +10 Warmth!
+    await RedisService.saveCafeState(cafeState);
+
+    user.unlockedRooms = cafeState.roomsUnlocked;
+
+    const unlockedAchievements: string[] = [];
+    const unlockedPuzzle = await RedisService.triggerAchievement(user, 'puzzle_solver');
+    if (unlockedPuzzle) unlockedAchievements.push('puzzle_solver');
+
+    RedisService.addTimelineEvent(user, 'achievement', `🧩 Solved Daily Puzzle: ${puzzle.title} (+1 Token, +20 Rep)`);
+    await checkAndCompleteObjective(user, 'claim_coffee'); // Daily puzzle completion completes daily objectives
+    await RedisService.saveUser(user);
+
+    return c.json<PuzzleSolveResponse>({
+      success: true,
+      data: {
+        user,
+        unlockedAchievements,
+      }
+    });
+  } catch (error) {
+    console.error('Solve daily puzzle server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to solve daily puzzle' }, 500);
   }
 });

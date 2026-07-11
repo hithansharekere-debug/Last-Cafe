@@ -7,12 +7,13 @@ import { NavigationProvider, useNavigation } from './context/NavigationContext';
 import { useCafe } from './hooks/useCafe';
 
 import { Header } from './components/Header';
-import { NoteComposerModal } from './components/NoteComposerModal';
+import { PuzzleCreatorModal } from './components/PuzzleCreatorModal';
 import { LoadingState } from './components/LoadingState';
 import { Button } from './components/Button';
 
 import { WelcomeScreen } from './screens/WelcomeScreen';
 import { CafeScreen } from './screens/CafeScreen';
+import { ResponsiveFrame } from './components/ResponsiveFrame';
 import { CommunityTableScreen } from './screens/CommunityTableScreen';
 import { DiscoverScreen } from './screens/DiscoverScreen';
 import { PuzzleCornerScreen } from './screens/PuzzleCornerScreen';
@@ -41,6 +42,15 @@ const AppContent = () => {
     reportObjectiveProgress,
     discoverLoading,
     dailyObjectives,
+    
+    // Phase 5 Puzzles bindings
+    puzzles,
+    fetchPuzzles,
+    publishPuzzle,
+    solvePuzzle,
+    likePuzzle,
+    favoritePuzzle,
+    solveDaily,
   } = useCafe();
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
@@ -128,14 +138,14 @@ const AppContent = () => {
     }
   }, [rooms]);
 
-  // Stable callback wraps to prevent inline re-creation on every render cycle
-  const handleFetchAllContributions = useCallback(() => {
-    void fetchContributions('All');
-  }, [fetchContributions]);
+  // Puzzles handlers (Phase 5)
+  const handleFetchAllPuzzles = useCallback(() => {
+    void fetchPuzzles('All');
+  }, [fetchPuzzles]);
 
-  const handleFetchCategoryContributions = useCallback((category: string) => {
-    void fetchContributions(category);
-  }, [fetchContributions]);
+  const handleFetchCategoryPuzzles = useCallback((category: string) => {
+    void fetchPuzzles(category);
+  }, [fetchPuzzles]);
 
   const handleFetchPuzzleLeaderboard = useCallback((puzzleId?: string) => {
     void fetchPuzzleLeaderboard(puzzleId);
@@ -147,8 +157,8 @@ const AppContent = () => {
 
   const handleFilterChange = useCallback((filter: string) => {
     setDiscoverFilter(filter);
-    void fetchContributions(filter);
-  }, [fetchContributions]);
+    void fetchPuzzles(filter);
+  }, [fetchPuzzles]);
 
   const handleClaimCoffee = useCallback(async () => {
     const success = await claimCoffee();
@@ -158,50 +168,50 @@ const AppContent = () => {
     return success;
   }, [claimCoffee, showToast]);
 
-  const handleSpendToken = useCallback(async (category: string, text: string, targetDate?: number) => {
-    const success = await addContribution(category, text, targetDate);
+  const handlePublishPuzzle = useCallback(async (puzzleData: any) => {
+    const success = await publishPuzzle(puzzleData);
     if (success) {
-      showToast('Noisy typewriter → Note pinned. 📝', 'success');
-      // Re-fetch categories on success
+      showToast('Mystery published to board! 🧩', 'success');
       if (currentScreen === 'discover') {
-        void fetchContributions(discoverFilter);
+        void fetchPuzzles(discoverFilter);
       } else {
-        void fetchContributions('All');
+        void fetchPuzzles('All');
       }
     }
     return success;
-  }, [addContribution, currentScreen, discoverFilter, fetchContributions, showToast]);
+  }, [publishPuzzle, currentScreen, discoverFilter, fetchPuzzles, showToast]);
 
-  const handleLikeNote = useCallback(async (noteId: string) => {
-    const res = await likeNote(noteId);
-    if (res.success) {
-      showToast('Note liked! ❤️', 'success');
-    }
-  }, [likeNote, showToast]);
-
-  const handleFavoriteNote = useCallback(async (noteId: string) => {
-    const success = await toggleFavorite(noteId);
+  const handleSolvePuzzle = useCallback(async (id: string, answer: string) => {
+    const success = await solvePuzzle(id, answer);
     if (success) {
-      // Find if it was added or removed
-      const isFav = user?.favorites?.includes(noteId);
-      if (isFav) {
-        showToast('Removed from favorites. ⭐', 'info');
-      } else {
-        showToast('Saved to favorites! ⭐', 'success');
-      }
-      
-      // Re-fetch contributions if on discover with Favorites active
-      if (currentScreen === 'discover' && discoverFilter === 'Favorites') {
-        void fetchContributions('Favorites');
-      }
+      showToast('Correct! Mystery solved. 🎉', 'success');
     }
-  }, [toggleFavorite, user, currentScreen, discoverFilter, fetchContributions, showToast]);
+    return success;
+  }, [solvePuzzle, showToast]);
 
-  const handleReadNote = useCallback(() => {
-    void reportObjectiveProgress('read_note');
-  }, [reportObjectiveProgress]);
+  const handleLikePuzzle = useCallback(async (id: string) => {
+    const success = await likePuzzle(id);
+    if (success) {
+      showToast('Puzzle liked! ❤️', 'success');
+    }
+  }, [likePuzzle, showToast]);
 
-  if (loading) {
+  const handleFavoritePuzzle = useCallback(async (id: string) => {
+    const success = await favoritePuzzle(id);
+    if (success) {
+      showToast('Toggled favorite! ⭐', 'success');
+    }
+  }, [favoritePuzzle, showToast]);
+
+  const handleSolveDaily = useCallback(async (answer: string) => {
+    const res = await solveDaily(answer);
+    if (res.success) {
+      showToast("Daily puzzle solved! +1 Token. ☕", 'success');
+    }
+    return res;
+  }, [solveDaily, showToast]);
+
+  if (loading && currentScreen !== 'welcome') {
     return (
       <div className="app-frame">
         <LoadingState message="Warming up the cafe..." />
@@ -229,27 +239,27 @@ const AppContent = () => {
         return (
           <CommunityTableScreen
             user={user}
-            contributions={contributions}
+            puzzles={puzzles}
             loading={false}
-            onFetchContributions={handleFetchAllContributions}
+            onFetchPuzzles={handleFetchAllPuzzles}
             onOpenComposer={handleOpenComposer}
-            onLikeNote={handleLikeNote}
-            onFavoriteNote={handleFavoriteNote}
-            onReadNote={handleReadNote}
+            onSolvePuzzle={handleSolvePuzzle}
+            onLikePuzzle={handleLikePuzzle}
+            onFavoritePuzzle={handleFavoritePuzzle}
           />
         );
       case 'discover':
         return (
           <DiscoverScreen
             user={user}
-            contributions={contributions}
+            puzzles={puzzles}
             loading={discoverLoading}
-            onFetchContributions={handleFetchCategoryContributions}
+            onFetchPuzzles={handleFetchCategoryPuzzles}
             activeFilter={discoverFilter}
             onFilterChange={handleFilterChange}
-            onLikeNote={handleLikeNote}
-            onFavoriteNote={handleFavoriteNote}
-            onReadNote={handleReadNote}
+            onSolvePuzzle={handleSolvePuzzle}
+            onLikePuzzle={handleLikePuzzle}
+            onFavoritePuzzle={handleFavoritePuzzle}
           />
         );
       case 'puzzle':
@@ -258,6 +268,7 @@ const AppContent = () => {
             pbTimeMs={pbTimeMs}
             leaderboard={puzzleLeaderboard}
             onFetchLeaderboard={handleFetchPuzzleLeaderboard}
+            onSolveDaily={handleSolveDaily}
           />
         );
       case 'profile':
@@ -268,21 +279,25 @@ const AppContent = () => {
   };
 
   return (
-    <div className="app-frame animate-fade-in">
-      <Header
-        tokenCount={user?.currentCoffeeTokens ?? 0}
-        onClaimToken={handleClaimCoffee}
-        hasClaimedToday={hasClaimedToday}
-      />
-      <main className="flex-1 overflow-hidden flex flex-col font-serif">
-        {renderScreen()}
-      </main>
+    <>
+      <ResponsiveFrame>
+        <div className="app-frame animate-fade-in">
+          <Header
+            tokenCount={user?.currentCoffeeTokens ?? 0}
+            onClaimToken={handleClaimCoffee}
+            hasClaimedToday={hasClaimedToday}
+          />
+          <main className="flex-1 overflow-hidden flex flex-col font-serif">
+            {renderScreen()}
+          </main>
+        </div>
+      </ResponsiveFrame>
 
-      <NoteComposerModal
+      <PuzzleCreatorModal
         isOpen={isComposerOpen}
         onClose={() => setIsComposerOpen(false)}
         currentTokens={user?.currentCoffeeTokens ?? 0}
-        onSpendToken={handleSpendToken}
+        onPublishPuzzle={handlePublishPuzzle}
       />
 
       {/* Milestone celebration overlay */}
@@ -381,7 +396,7 @@ const AppContent = () => {
           onClose={() => setToast(null)}
         />
       )}
-    </div>
+    </>
   );
 };
 

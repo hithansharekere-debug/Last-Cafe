@@ -24,6 +24,11 @@ export interface User {
   timeline: TimelineEvent[];
   favorites: string[];        // Favorited note IDs
 
+  // Phase 5 fields
+  reputation: number;
+  solvedPuzzles?: string[];
+  dailySolvedDates?: string[]; // Dates the user solved the daily puzzle (YYYY-MM-DD)
+
   // Aliases kept for backwards compatibility with existing screens
   /** @deprecated Use joinedAt */
   joinedDate: number;
@@ -228,6 +233,65 @@ export interface FavoriteResponse {
   success: boolean;
   data?: {
     noteId: string;
+    favorites: string[];
+    user: User;
+  };
+  error?: string;
+}
+
+// ─── Community Puzzle ───────────────────────────────────────────────────
+export interface CommunityPuzzle {
+  id: string;
+  creatorId: string;
+  creatorName: string;
+  title: string;
+  description: string;          // Setup context
+  puzzleText: string;           // Riddle/clue content
+  hint: string;
+  answer: string;               // Correct answer (validated case-insensitively)
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+  category: 'Riddle' | 'Hidden Word' | 'Cipher' | 'Number Pattern' | 'Logic Puzzle' | 'Detective Story' | 'Fill in the Blank';
+  createdAt: number;            // Unix timestamp
+  solveCount: number;
+  likes: number;
+  likedBy: string[];            // User IDs who liked it
+  favorites: number;
+  favoritedBy: string[];        // User IDs who favorited it
+}
+
+export interface PuzzlesListResponse {
+  success: boolean;
+  data?: {
+    puzzles: CommunityPuzzle[];
+  };
+  error?: string;
+}
+
+export interface PuzzleSolveResponse {
+  success: boolean;
+  data?: {
+    puzzle?: CommunityPuzzle;
+    user: User;
+    unlockedAchievements: string[];
+  };
+  error?: string;
+}
+
+export interface PuzzleLikeResponse {
+  success: boolean;
+  data?: {
+    puzzleId: string;
+    likes: number;
+    likedBy: string[];
+    user: User;
+  };
+  error?: string;
+}
+
+export interface PuzzleFavoriteResponse {
+  success: boolean;
+  data?: {
+    puzzleId: string;
     favorites: string[];
     user: User;
   };

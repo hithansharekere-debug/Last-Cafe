@@ -85,9 +85,9 @@ export const NoteComposerModal = ({
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 text-xs font-serif rounded border border-[#2c160a] transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 text-xs font-serif rounded-md border-2 border-[#2c160a] transition-all cursor-pointer shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none font-bold ${
                     selectedCategory === cat
-                      ? 'bg-[#cf7929] text-[#fdfaf2] shadow-[2px_2px_0px_#2c160a]'
+                      ? 'bg-[#cf7929] text-[#fdfaf2]'
                       : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#c8a285]'
                   }`}
                 >

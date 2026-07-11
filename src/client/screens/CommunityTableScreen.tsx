@@ -1,76 +1,85 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { EmptyState } from '../components/EmptyState';
-import { LoadingState } from '../components/LoadingState';
-import { NoteCard } from '../components/NoteCard';
-import type { Contribution, User } from '../../shared/types';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import { PuzzleCard } from '../components/PuzzleCard';
+import type { CommunityPuzzle, User } from '../../shared/types';
 
 interface CommunityTableScreenProps {
   user: User | null;
-  contributions: Contribution[];
+  puzzles: CommunityPuzzle[];
   loading: boolean;
-  onFetchContributions: () => void;
+  onFetchPuzzles: () => void;
   onOpenComposer: () => void;
-  onLikeNote?: (id: string) => void;
-  onFavoriteNote?: (id: string) => void;
-  onReadNote?: () => void;
+  onSolvePuzzle: (id: string, answer: string) => Promise<boolean>;
+  onLikePuzzle?: (id: string) => void;
+  onFavoritePuzzle?: (id: string) => void;
 }
 
 export const CommunityTableScreen = ({
   user,
-  contributions,
+  puzzles,
   loading,
-  onFetchContributions,
+  onFetchPuzzles,
   onOpenComposer,
-  onLikeNote,
-  onFavoriteNote,
-  onReadNote,
+  onSolvePuzzle,
+  onLikePuzzle,
+  onFavoritePuzzle,
 }: CommunityTableScreenProps) => {
   useEffect(() => {
-    onFetchContributions();
-  }, [onFetchContributions]);
-
-  if (loading) {
-    return <LoadingState message="Setting the table…" />;
-  }
+    onFetchPuzzles();
+  }, [onFetchPuzzles]);
 
   return (
-    <div className="flex flex-col w-full h-full overflow-y-auto bg-[#fdfaf2]">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
       {/* Header */}
       <div
-        className="flex flex-col px-4 py-4 border-b-2 border-[#2c160a]"
-        style={{ backgroundColor: '#f7edd7' }}
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        style={{
+          backgroundColor: '#f7edd7',
+          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
       >
-        <h2 className="font-serif font-bold text-base text-[#2c160a]">🪑 The Community Table</h2>
+        <h2 className="font-serif font-bold text-base text-[#2c160a] leading-tight">🪑 The Community Table</h2>
         <p className="font-serif text-xs text-[#5e463a] italic mt-1 leading-relaxed">
-          Notes left by visitors before you. Each one cost a cup of coffee.
+          Cozy mysteries left behind by other visitors. Solve them to gain reputation.
         </p>
       </div>
 
-      {/* Notes */}
-      <div className="flex flex-col gap-3 p-4">
-        {contributions.length === 0 ? (
-          <EmptyState
-            icon="📭"
-            title="Be the first visitor"
-            message="The cafe is quiet today. Why not leave the first note?"
-            actionLabel="✍️ Leave First Note"
-            onAction={onOpenComposer}
-          />
-        ) : (
-          contributions.map((contrib) => (
-            <NoteCard
-              key={contrib.id}
-              contribution={contrib}
-              isLiked={!!contrib.likedBy?.includes(user?.id || '')}
-              isFavorited={!!user?.favorites?.includes(contrib.id)}
-              onLike={onLikeNote ? () => onLikeNote(contrib.id) : undefined}
-              onFavorite={onFavoriteNote ? () => onFavoriteNote(contrib.id) : undefined}
-              onRead={onReadNote}
+      {/* Feed Area */}
+      <div className="flex-1 overflow-y-auto">
+        {loading ? (
+          <div className="p-1">
+            <SkeletonLoader type="feed" count={3} />
+          </div>
+        ) : puzzles.length === 0 ? (
+          <div className="p-5">
+            <EmptyState
+              icon="📭"
+              title="No mysteries pinned"
+              message="The board is currently clear. Why not write the first cozy puzzle?"
+              actionLabel="✍️ Write a Mystery"
+              onAction={onOpenComposer}
             />
-          ))
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4.5 p-5">
+            {puzzles.map((puzzle) => (
+              <PuzzleCard
+                key={puzzle.id}
+                puzzle={puzzle}
+                isSolved={!!user?.solvedPuzzles?.includes(puzzle.id)}
+                isLiked={!!puzzle.likedBy?.includes(user?.id || '')}
+                isFavorited={!!user?.favorites?.includes(puzzle.id)}
+                onSolve={onSolvePuzzle}
+                onLike={onLikePuzzle ? () => onLikePuzzle(puzzle.id) : undefined}
+                onFavorite={onFavoritePuzzle ? () => onFavoritePuzzle(puzzle.id) : undefined}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>
   );
 };
-
+export default CommunityTableScreen;

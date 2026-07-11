@@ -1,62 +1,65 @@
 import { useEffect } from 'react';
 import { EmptyState } from '../components/EmptyState';
-import { LoadingState } from '../components/LoadingState';
-import { NoteCard } from '../components/NoteCard';
-import type { Contribution, User } from '../../shared/types';
+import { PuzzleCard } from '../components/PuzzleCard';
+import { SkeletonLoader } from '../components/SkeletonLoader';
+import type { CommunityPuzzle, User } from '../../shared/types';
 
 interface DiscoverScreenProps {
   user: User | null;
-  contributions: Contribution[];
+  puzzles: CommunityPuzzle[];
   loading: boolean;
-  onFetchContributions: (category: string) => void;
+  onFetchPuzzles: (category: string) => void;
   activeFilter: string;
   onFilterChange: (filter: string) => void;
-  onLikeNote?: (id: string) => void;
-  onFavoriteNote?: (id: string) => void;
-  onReadNote?: () => void;
+  onSolvePuzzle: (id: string, answer: string) => Promise<boolean>;
+  onLikePuzzle?: (id: string) => void;
+  onFavoritePuzzle?: (id: string) => void;
 }
 
 const FILTER_OPTIONS: { label: string; value: string; icon: string }[] = [
   { label: 'All', value: 'All', icon: '🗂' },
-  { label: 'Newest', value: 'Newest', icon: '🕒' },
-  { label: 'Popular', value: 'Popular', icon: '🔥' },
+  { label: 'Easy', value: 'Easy', icon: '🟢' },
+  { label: 'Medium', value: 'Medium', icon: '🟡' },
+  { label: 'Hard', value: 'Hard', icon: '🔴' },
+  { label: 'Riddles', value: 'Riddle', icon: '🧩' },
+  { label: 'Hidden Word', value: 'Hidden Word', icon: '🔍' },
+  { label: 'Ciphers', value: 'Cipher', icon: '🔑' },
+  { label: 'Patterns', value: 'Number Pattern', icon: '🔢' },
+  { label: 'Logic', value: 'Logic Puzzle', icon: '🧠' },
+  { label: 'Detective', value: 'Detective Story', icon: '🕵️‍♂️' },
+  { label: 'Fill Blanks', value: 'Fill in the Blank', icon: '📝' },
   { label: 'Favorites', value: 'Favorites', icon: '⭐' },
-  { label: 'Gratitude', value: 'Gratitude', icon: '🙏' },
-  { label: 'Dreams', value: 'Dream', icon: '🌌' },
-  { label: 'Advice', value: 'Advice', icon: '🌿' },
-  { label: 'Memories', value: 'Memory', icon: '💭' },
-  { label: 'Questions', value: 'Question', icon: '❓' },
-  { label: 'Secrets', value: 'Secret', icon: '🤫' },
-  { label: 'Recs', value: 'Recommendation', icon: '📚' },
-  { label: 'Capsules', value: 'Time Capsule', icon: '⏳' },
 ];
 
 export const DiscoverScreen = ({
   user,
-  contributions,
+  puzzles,
   loading,
-  onFetchContributions,
+  onFetchPuzzles,
   activeFilter,
   onFilterChange,
-  onLikeNote,
-  onFavoriteNote,
-  onReadNote,
+  onSolvePuzzle,
+  onLikePuzzle,
+  onFavoritePuzzle,
 }: DiscoverScreenProps) => {
-  // Pull current active filter contributions on mount or when filter changes
   useEffect(() => {
-    onFetchContributions(activeFilter);
-  }, [onFetchContributions, activeFilter]);
+    onFetchPuzzles(activeFilter);
+  }, [onFetchPuzzles, activeFilter]);
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2]">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
       {/* Header + filters */}
       <div
-        className="flex flex-col px-4 pt-4 pb-3 border-b-2 border-[#2c160a] flex-shrink-0"
-        style={{ backgroundColor: '#f7edd7' }}
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        style={{
+          backgroundColor: '#f7edd7',
+          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
       >
-        <h2 className="font-serif font-bold text-base text-[#2c160a] mb-1">🔍 Discover</h2>
+        <h2 className="font-serif font-bold text-base text-[#2c160a] mb-1">🔍 Discover Feed</h2>
         <p className="font-serif text-xs text-[#5e463a] italic mb-3">
-          Browse what visitors have left behind.
+          Explore templates-based puzzles posted by players around the world.
         </p>
 
         <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -66,14 +69,14 @@ export const DiscoverScreen = ({
               <button
                 key={value}
                 onClick={() => onFilterChange(value)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full border border-[#2c160a] font-serif text-xs whitespace-nowrap flex-shrink-0 transition-all duration-150 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#2c160a] font-serif text-xs whitespace-nowrap flex-shrink-0 transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-[#2c160a] text-[#fdfaf2] shadow-[2px_2px_0px_rgba(44,22,10,0.5)]'
-                    : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#c8a285]'
+                    ? 'bg-[#2c160a] text-[#fdfaf2] shadow-[2px_2px_0px_#cf7929] scale-[1.02]'
+                    : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#e2cbba] hover:scale-[1.01]'
                 }`}
               >
-                <span className="select-none">{icon}</span>
-                <span>{label}</span>
+                <span className="select-none text-sm">{icon}</span>
+                <span className="font-bold">{label}</span>
               </button>
             );
           })}
@@ -83,30 +86,35 @@ export const DiscoverScreen = ({
       {/* Feed */}
       <div className="flex-1 overflow-y-auto">
         {loading ? (
-          <LoadingState message="Searching the shelves…" />
-        ) : contributions.length === 0 ? (
-          <EmptyState
-            icon="🔍"
-            title={activeFilter === 'Favorites' ? 'No Favorites Yet' : 'Nothing Found'}
-            message={
-              activeFilter === 'All'
-                ? 'The cafe is waiting for its first visitor.'
-                : activeFilter === 'Favorites'
-                ? 'Star a note to save it here for easy reading.'
-                : `No ${activeFilter.toLowerCase()} notes yet. Be the first to leave one.`
-            }
-          />
+          <div className="p-1">
+            <SkeletonLoader type="feed" count={3} />
+          </div>
+        ) : puzzles.length === 0 ? (
+          <div className="p-5">
+            <EmptyState
+              icon={activeFilter === 'Favorites' ? '⭐' : '🔍'}
+              title={activeFilter === 'Favorites' ? 'No Favorites Yet' : 'Quiet Shelves'}
+              message={
+                activeFilter === 'All'
+                  ? 'No community puzzles found on the mystery wall today.'
+                  : activeFilter === 'Favorites'
+                  ? 'Tap the star icon on any mystery card to save it here.'
+                  : `No entries found under the ${activeFilter.toLowerCase()} category.`
+              }
+            />
+          </div>
         ) : (
-          <div className="flex flex-col gap-3 p-4">
-            {contributions.map((contrib) => (
-              <NoteCard
-                key={contrib.id}
-                contribution={contrib}
-                isLiked={!!contrib.likedBy?.includes(user?.id || '')}
-                isFavorited={!!user?.favorites?.includes(contrib.id)}
-                onLike={onLikeNote ? () => onLikeNote(contrib.id) : undefined}
-                onFavorite={onFavoriteNote ? () => onFavoriteNote(contrib.id) : undefined}
-                onRead={onReadNote}
+          <div className="flex flex-col gap-4.5 p-5">
+            {puzzles.map((puzzle) => (
+              <PuzzleCard
+                key={puzzle.id}
+                puzzle={puzzle}
+                isSolved={!!user?.solvedPuzzles?.includes(puzzle.id)}
+                isLiked={!!puzzle.likedBy?.includes(user?.id || '')}
+                isFavorited={!!user?.favorites?.includes(puzzle.id)}
+                onSolve={onSolvePuzzle}
+                onLike={onLikePuzzle ? () => onLikePuzzle(puzzle.id) : undefined}
+                onFavorite={onFavoritePuzzle ? () => onFavoritePuzzle(puzzle.id) : undefined}
               />
             ))}
           </div>
@@ -115,3 +123,4 @@ export const DiscoverScreen = ({
     </div>
   );
 };
+export default DiscoverScreen;

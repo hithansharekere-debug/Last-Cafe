@@ -1,21 +1,51 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../components/Card';
+import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
-import { LoadingState } from '../components/LoadingState';
+import { SkeletonLoader } from '../components/SkeletonLoader';
 import type { LeaderboardEntry } from '../../shared/types';
 
 interface PuzzleCornerScreenProps {
   pbTimeMs: number | null;
   leaderboard: LeaderboardEntry[];
   onFetchLeaderboard: (puzzleId?: string) => void;
+  onSolveDaily: (answer: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const PuzzleCornerScreen = ({
   pbTimeMs,
   leaderboard,
   onFetchLeaderboard,
+  onSolveDaily,
 }: PuzzleCornerScreenProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [dailyPuzzle, setDailyPuzzle] = useState<{ id: string; title: string; question: string; hint: string; difficulty: string } | null>(null);
+  const [dailySolved, setDailySolved] = useState(false);
+  const [dailyAnswer, setDailyAnswer] = useState('');
+  const [showDailyHint, setShowDailyHint] = useState(false);
+  
+  const [isSolvingDaily, setIsSolvingDaily] = useState(false);
+  const [solveDailyError, setSolveDailyError] = useState<string | null>(null);
+  const [solveDailySuccess, setSolveDailySuccess] = useState<string | null>(null);
+
+  // Fetch daily puzzle details
+  useEffect(() => {
+    let active = true;
+    const fetchDaily = async () => {
+      try {
+        const res = await fetch('/api/puzzle/daily');
+        const json = await res.json();
+        if (json.success && active) {
+          setDailyPuzzle(json.data.puzzle);
+          setDailySolved(json.data.solved);
+        }
+      } catch (err) {
+        console.error('Failed to load daily puzzle:', err);
+      }
+    };
+    void fetchDaily();
+    return () => { active = false; };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -32,83 +62,187 @@ export const PuzzleCornerScreen = ({
     };
   }, [onFetchLeaderboard]);
 
-  if (isLoading) {
-    return <LoadingState message="Setting up the puzzle corner…" />;
-  }
+  const handleSolveDailySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!dailyAnswer.trim() || isSolvingDaily) return;
+
+    setIsSolvingDaily(true);
+    setSolveDailyError(null);
+    setSolveDailySuccess(null);
+    try {
+      const res = await onSolveDaily(dailyAnswer.trim());
+      if (res.success) {
+        setSolveDailySuccess("Correct! Today's daily coffee token has been rewarded. ☕");
+        setDailySolved(true);
+        setDailyAnswer('');
+      } else {
+        setSolveDailyError(res.error || 'Incorrect answer. Try again.');
+      }
+    } catch {
+      setSolveDailyError('Failed to submit answer. Try again.');
+    } finally {
+      setIsSolvingDaily(false);
+    }
+  };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-y-auto bg-[#fdfaf2]">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
       {/* Header */}
       <div
-        className="flex flex-col px-4 py-4 border-b-2 border-[#2c160a]"
-        style={{ backgroundColor: '#f7edd7' }}
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        style={{
+          backgroundColor: '#f7edd7',
+          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
+          backgroundSize: '16px 16px',
+        }}
       >
         <h2 className="font-serif font-bold text-base text-[#2c160a] mb-1">🧩 Puzzle Corner</h2>
         <p className="font-serif text-xs text-[#5e463a] italic leading-relaxed">
-          A daily Tangram puzzle. Rearrange the wooden pieces, stay calm, find the shape.
-          No rush — the tea is still warm.
+          Daily handcrafted challenges. Solve to earn Coffee Tokens and reputation.
         </p>
       </div>
 
-      {/* Tangram board - Disabled cleanly */}
-      <div className="p-4 pb-2">
-        <Card variant="wood" elevation="low" className="p-6">
-          <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <span className="text-5xl animate-float select-none">🧩</span>
-            <h3 className="font-serif font-bold text-sm text-[#eeded1] tracking-wider">
-              Puzzle gameplay coming soon
-            </h3>
-            <p className="font-serif text-xs text-[#c8a285] leading-relaxed max-w-xs">
-              Check back in a future release to test your spatial reasoning with daily cozy tangram challenges.
-            </p>
-          </div>
-        </Card>
-      </div>
+      <div className="flex-1 overflow-y-auto pb-6">
+        {/* Handcrafted Daily Puzzle Card */}
+        <div className="p-5">
+          {dailyPuzzle ? (
+            <Card variant="wood" elevation="high" className="p-6 border-2 border-[#2c160a] relative">
+              {/* Daily tag */}
+              <div className="absolute top-3 right-3 bg-[#cf7929] text-[#fdfaf2] font-mono text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-[1px_1px_0px_#2c160a] select-none">
+                Today's Daily
+              </div>
 
-      {/* Leaderboard */}
-      <div className="px-4 pb-6">
-        <h3 className="font-serif font-bold text-sm text-[#2c160a] mb-2 flex items-center gap-2">
-          <span>🏆</span> Today's Leaderboard
-        </h3>
-        {leaderboard.length === 0 ? (
-          <EmptyState
-            icon="🏆"
-            title="No Scores Yet"
-            message="Be the first to complete today's puzzle and top the board."
-          />
-        ) : (
-          <Card variant="parchment" elevation="low" className="p-0 overflow-hidden border-2 border-[#2c160a]">
-            <table className="w-full">
-              <thead>
-                <tr
-                  className="border-b-2 border-[#2c160a] font-serif text-[10px] uppercase tracking-widest text-[#5e463a]"
-                  style={{ backgroundColor: '#eeded1' }}
-                >
-                  <th className="py-2 px-3 text-left font-bold select-none">#</th>
-                  <th className="py-2 px-3 text-left font-bold select-none">Visitor</th>
-                  <th className="py-2 px-3 text-right font-bold select-none">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leaderboard.map((entry, idx) => (
+              <div className="flex flex-col items-center gap-3.5 text-center">
+                <span className="text-5xl animate-float select-none">☕</span>
+                <h3 className="font-serif font-bold text-base text-[#fdfaf2] tracking-wider uppercase">
+                  {dailyPuzzle.title}
+                </h3>
+                <div className="w-16 h-0.5 bg-[#eeded1]/20" />
+                
+                <p className="font-handwritten text-sm text-[#eeded1] leading-relaxed max-w-sm whitespace-pre-wrap">
+                  {dailyPuzzle.question}
+                </p>
+
+                {dailySolved ? (
+                  <div className="w-full mt-2 p-4 bg-[#e1ead4] border-2 border-[#4a7c59] rounded-lg text-center font-serif text-xs text-[#2e4d37] font-bold shadow-[2px_2px_0px_#2c160a]">
+                    ✅ Solved! You earned +1 Coffee Token & +20 Reputation.
+                  </div>
+                ) : (
+                  <form onSubmit={handleSolveDailySubmit} className="w-full flex flex-col gap-3.5 mt-2">
+                    {/* Hint */}
+                    {dailyPuzzle.hint && (
+                      <div>
+                        {showDailyHint ? (
+                          <div className="p-2.5 bg-[#2c160a]/50 border-2 border-dashed border-[#eeded1]/20 rounded-md font-serif text-[10px] text-[#eeded1]/90 leading-normal max-w-sm mx-auto text-left">
+                            💡 <strong>Hint:</strong> {dailyPuzzle.hint}
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => setShowDailyHint(true)}
+                            className="font-serif text-[10px] text-[#cf7929] italic underline hover:text-[#eeded1] cursor-pointer"
+                          >
+                            Reveal Hint...
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 max-w-sm mx-auto w-full">
+                      <input
+                        type="text"
+                        value={dailyAnswer}
+                        onChange={(e) => {
+                          setDailyAnswer(e.target.value);
+                          if (solveDailyError) setSolveDailyError(null);
+                        }}
+                        placeholder="Type answer here..."
+                        maxLength={50}
+                        className="flex-grow rounded-md border-2 border-[#eeded1] px-3 py-2 font-serif text-xs bg-[#2c160a]/40 text-[#fdfaf2] placeholder:text-[#c8a285]/70 focus:outline-none focus:border-[#cf7929]"
+                      />
+                      <Button
+                        type="submit"
+                        variant="secondary"
+                        size="sm"
+                        disabled={!dailyAnswer.trim() || isSolvingDaily}
+                        className="cursor-pointer font-bold"
+                      >
+                        {isSolvingDaily ? 'Solving...' : 'Solve'}
+                      </Button>
+                    </div>
+
+                    {solveDailyError && (
+                      <p className="text-[10px] text-[#cf7929] font-serif italic font-bold">
+                        {solveDailyError}
+                      </p>
+                    )}
+                  </form>
+                )}
+
+                {solveDailySuccess && (
+                  <p className="text-xs text-[#eeded1] font-serif italic font-bold">
+                    {solveDailySuccess}
+                  </p>
+                )}
+              </div>
+            </Card>
+          ) : (
+            <div className="p-1">
+              <SkeletonLoader type="feed" count={1} />
+            </div>
+          )}
+        </div>
+
+        {/* Leaderboard */}
+        <div className="px-5">
+          <h3 className="font-serif font-bold text-sm text-[#2c160a] mb-3 flex items-center gap-2 px-1">
+            <span>🏆</span> Tangram Speed Leaderboard
+          </h3>
+          {isLoading ? (
+            <div className="p-1">
+              <SkeletonLoader type="feed" count={2} />
+            </div>
+          ) : leaderboard.length === 0 ? (
+            <EmptyState
+              icon="🏆"
+              title="No Scores Yet"
+              message="Tangram challenge leaderboard will populate soon."
+            />
+          ) : (
+            <Card variant="parchment" elevation="low" className="p-0 overflow-hidden border-2 border-[#2c160a] bg-[#fdfaf2]">
+              <table className="w-full border-collapse">
+                <thead>
                   <tr
-                    key={entry.username}
-                    className={`border-b border-dashed border-[#c8a285] last:border-0 ${idx === 0 ? 'bg-[#d4af37]/10' : ''}`}
+                    className="border-b-2 border-[#2c160a] font-serif text-[10px] uppercase tracking-widest text-[#5e463a]"
+                    style={{ backgroundColor: '#eeded1' }}
                   >
-                    <td className="py-2 px-3 font-mono text-xs text-[#5e463a] select-none">
-                      {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${entry.rank}.`}
-                    </td>
-                    <td className="py-2 px-3 font-serif text-sm text-[#2c160a] font-bold">{entry.username}</td>
-                    <td className="py-2 px-3 font-mono text-xs text-[#cf7929] text-right font-bold select-none">
-                      {Math.floor(entry.timeMs / 1000)}s
-                    </td>
+                    <th className="py-2.5 px-4.5 text-left font-bold select-none">#</th>
+                    <th className="py-2.5 px-4.5 text-left font-bold select-none">Visitor</th>
+                    <th className="py-2.5 px-4.5 text-right font-bold select-none">Time</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </Card>
-        )}
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry, idx) => (
+                    <tr
+                      key={entry.username}
+                      className={`border-b border-dashed border-[#c8a285]/55 last:border-0 ${idx === 0 ? 'bg-[#d4af37]/10' : ''}`}
+                    >
+                      <td className="py-2.5 px-4.5 font-mono text-xs text-[#5e463a] select-none">
+                        {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${entry.rank}.`}
+                      </td>
+                      <td className="py-2.5 px-4.5 font-serif text-xs text-[#2c160a] font-bold">{entry.username}</td>
+                      <td className="py-2.5 px-4.5 font-mono text-xs text-[#cf7929] text-right font-bold select-none">
+                        {Math.floor(entry.timeMs / 1000)}s
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
 };
+export default PuzzleCornerScreen;

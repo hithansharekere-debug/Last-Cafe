@@ -10,33 +10,33 @@ interface HeaderProps {
 export const Header = ({ tokenCount, onClaimToken, hasClaimedToday = false }: HeaderProps) => {
   const { currentScreen, navigateTo } = useNavigation();
 
-  const navItems: { label: string; screen: ScreenType }[] = [
-    { label: 'Cafe', screen: 'cafe' },
-    { label: 'Table', screen: 'table' },
-    { label: 'Discover', screen: 'discover' },
-    { label: 'Puzzle', screen: 'puzzle' },
-    { label: 'Library Card', screen: 'profile' },
+  const navItems: { label: string; screen: ScreenType; icon: string }[] = [
+    { label: 'Cafe', screen: 'cafe', icon: '☕' },
+    { label: 'Table', screen: 'table', icon: '🪑' },
+    { label: 'Discover', screen: 'discover', icon: '🔍' },
+    { label: 'Puzzle', screen: 'puzzle', icon: '🧩' },
+    { label: 'Library Card', screen: 'profile', icon: '📋' },
   ];
 
   return (
-    <header className="wood-plank-bg flex flex-col w-full border-b-2 border-[#2c160a] p-3 shadow-md select-none">
+    <header className="wood-plank-bg flex flex-col w-full border-b-2 border-[#2c160a] p-4 shadow-md select-none flex-shrink-0">
       {/* Brand & Token row */}
-      <div className="flex justify-between items-center w-full mb-2.5">
+      <div className="flex justify-between items-center w-full mb-3">
         <div 
-          className="flex flex-col cursor-pointer"
+          className="flex flex-col cursor-pointer hover:scale-[1.01] transition-transform"
           onClick={() => navigateTo('welcome')}
         >
           <span className="font-serif font-bold text-lg leading-tight tracking-wide text-[#fdfaf2] hover:text-[#eeded1] transition-colors">
             The Last Cafe
           </span>
-          <span className="font-handwritten text-xs text-[#c8a285] leading-none">
+          <span className="font-handwritten text-xs text-[#c8a285] leading-none mt-0.5">
             on the internet
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           {/* Token count display */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#2c160a] border border-[#eeded1] rounded-full shadow-inner">
+          <div className="flex items-center gap-1.5 px-3.5 py-2 bg-[#2c160a] border-2 border-[#eeded1]/20 rounded-full shadow-inner select-none">
             <span className="text-sm">☕</span>
             <span className="font-mono text-xs font-bold text-[#fdfaf2]">
               {tokenCount} {tokenCount === 1 ? 'Token' : 'Tokens'}
@@ -48,33 +48,34 @@ export const Header = ({ tokenCount, onClaimToken, hasClaimedToday = false }: He
             <button
               onClick={onClaimToken}
               disabled={hasClaimedToday}
-              className={`px-3 py-1.5 rounded-full text-xs font-serif border border-[#2c160a] shadow transition-all duration-200 ${
+              className={`px-3 py-2 rounded-full text-xs font-serif font-bold border-2 border-[#2c160a] shadow-[2px_2px_0px_#2c160a] active:translate-y-0.5 active:shadow-none transition-all duration-200 cursor-pointer ${
                 hasClaimedToday
-                  ? 'bg-[#5e463a] text-[#c8a285] opacity-60 cursor-not-allowed'
-                  : 'bg-[#cf7929] hover:bg-[#a85012] text-[#fdfaf2] active:translate-y-0.5'
+                  ? 'bg-[#5e463a] text-[#c8a285]/70 opacity-60 cursor-not-allowed border-dashed'
+                  : 'bg-[#cf7929] hover:bg-[#a85012] text-[#fdfaf2]'
               }`}
             >
-              {hasClaimedToday ? 'Claimed' : 'Claim Daily'}
+              {hasClaimedToday ? 'Brewed' : 'Brew'}
             </button>
           )}
         </div>
       </div>
 
       {/* Navigation tabs row */}
-      <nav className="flex justify-between items-center w-full mt-1.5 border-t border-[#371e0c] pt-2 overflow-x-auto gap-1">
+      <nav className="flex justify-between items-center w-full mt-2 border-t border-[#2c160a]/40 pt-2.5 overflow-x-auto gap-1.5" style={{ scrollbarWidth: 'none' }}>
         {navItems.map((item) => {
           const isActive = currentScreen === item.screen;
           return (
             <button
               key={item.screen}
               onClick={() => navigateTo(item.screen)}
-              className={`px-3 py-1 rounded text-xs font-serif tracking-wider whitespace-nowrap transition-all duration-150 relative ${
+              className={`px-2.5 py-1.5 rounded-md text-xs font-serif tracking-wider font-bold whitespace-nowrap transition-all duration-150 flex items-center gap-1 cursor-pointer border ${
                 isActive
-                  ? 'text-[#df8a27] font-bold underline decoration-2 underline-offset-4'
-                  : 'text-[#eeded1] hover:text-[#fdfaf2] hover:bg-[#371e0c]/30'
+                  ? 'text-[#fdfaf2] bg-[#2c160a] border-[#cf7929] shadow-[inset_1px_1px_3px_rgba(0,0,0,0.5)]'
+                  : 'text-[#eeded1] hover:text-[#fdfaf2] hover:bg-[#371e0c]/30 border-transparent'
               }`}
             >
-              {item.label}
+              <span className="text-sm select-none">{item.icon}</span>
+              <span>{item.label}</span>
             </button>
           );
         })}
@@ -82,3 +83,4 @@ export const Header = ({ tokenCount, onClaimToken, hasClaimedToday = false }: He
     </header>
   );
 };
+export default Header;

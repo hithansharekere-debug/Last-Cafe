@@ -50,6 +50,8 @@ export const NoteCard = ({
   onRead,
 }: NoteCardProps) => {
   const [hasRead, setHasRead] = React.useState(false);
+  const [tiltAngle] = React.useState(() => (Math.random() * 2.4 - 1.2).toFixed(2));
+  
   const icon = CATEGORY_ICONS[contribution.category] ?? '📝';
   const palette = CATEGORY_BADGE_COLORS[contribution.category] ?? { bg: '#fdfaf2', text: '#2c160a', border: '#2c160a' };
 
@@ -58,26 +60,38 @@ export const NoteCard = ({
 
   return (
     <div
-      className={isNew ? 'newly-submitted-note rounded' : ''}
-      onMouseEnter={() => {
+      className={`transition-all duration-300 ${isNew ? 'newly-submitted-note rounded-lg' : ''}`}
+      style={{
+        transform: `rotate(${tiltAngle}deg)`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.transform = 'rotate(0deg) scale(1.015)';
         if (!hasRead && onRead) {
           setHasRead(true);
           onRead();
         }
       }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.transform = `rotate(${tiltAngle}deg)`;
+      }}
     >
-      <Card variant="napkin" elevation="low" className="border-2 border-[#2c160a]">
+      <Card variant="napkin" elevation="high" className="border-2 border-[#2c160a] pt-7 pb-4 px-5">
+        {/* Corkboard pin */}
+        <div className="absolute top-1.5 left-1/2 -translate-x-1/2 text-sm z-10 drop-shadow-sm select-none">
+          📌
+        </div>
+
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-1.5">
             <span className="text-base select-none">{icon}</span>
             <span
-              className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded border font-bold select-none"
+              className="font-mono text-[9px] uppercase tracking-widest px-2 py-0.5 rounded border-2 font-bold select-none"
               style={{ backgroundColor: palette.bg, color: palette.text, borderColor: palette.border }}
             >
               {contribution.category}
             </span>
           </div>
-          <span className="font-mono text-[9px] text-[#5e463a] select-none">
+          <span className="font-mono text-[9px] text-[#5e463a] select-none font-bold">
             {formatRelativeTime(contribution.createdAt || contribution.timestamp)}
           </span>
         </div>
@@ -87,9 +101,9 @@ export const NoteCard = ({
         </p>
 
         <div className="flex items-center justify-between pt-2 border-t border-dashed border-[#c8a285] text-[10px] text-[#5e463a] font-serif">
-          <span className="italic">— {contribution.username}</span>
+          <span className="italic font-bold">— {contribution.username}</span>
           <div className="flex items-center gap-2.5 font-mono">
-            <span className="select-none">🔥 {contribution.warmthGiven || 1}</span>
+            <span className="select-none font-bold">🔥 {contribution.warmthGiven || 1}</span>
             
             <button
               onClick={(e) => {
@@ -97,13 +111,13 @@ export const NoteCard = ({
                 if (onLike) onLike();
               }}
               disabled={isLiked || !onLike}
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded border border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none font-bold ${
-                isLiked ? 'bg-[#eeded1] text-[#9b4618] opacity-75' : 'bg-transparent text-[#5e463a]'
+              className={`flex items-center gap-1 px-2 py-1 rounded-md border-2 border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none font-bold shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none ${
+                isLiked ? 'bg-[#eeded1] text-[#9b4618] opacity-75 shadow-none' : 'bg-transparent text-[#5e463a]'
               }`}
               style={{ display: 'inline-flex', alignItems: 'center' }}
               title={isLiked ? "You liked this note" : "Like note"}
             >
-              <span>{isLiked ? '❤️' : '🤍'}</span>
+              <span className="text-xs">{isLiked ? '❤️' : '🤍'}</span>
               <span>{contribution.likes || 0}</span>
             </button>
             
@@ -113,13 +127,13 @@ export const NoteCard = ({
                 if (onFavorite) onFavorite();
               }}
               disabled={!onFavorite}
-              className={`flex items-center justify-center rounded border border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none ${
+              className={`flex items-center justify-center rounded-md border-2 border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none ${
                 isFavorited ? 'bg-[#eeded1] text-[#cf7929]' : 'bg-transparent text-[#5e463a]'
               }`}
-              style={{ display: 'inline-flex', width: '22px', height: '22px', padding: 0 }}
+              style={{ display: 'inline-flex', width: '24px', height: '24px', padding: 0 }}
               title={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
             >
-              <span>{isFavorited ? '★' : '☆'}</span>
+              <span className="text-xs">{isFavorited ? '★' : '☆'}</span>
             </button>
           </div>
         </div>
@@ -127,4 +141,4 @@ export const NoteCard = ({
     </div>
   );
 };
-
+export default NoteCard;

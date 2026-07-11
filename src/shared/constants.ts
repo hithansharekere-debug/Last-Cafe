@@ -131,3 +131,93 @@ export const DECORATION_DEFINITIONS: Record<string, DecorDef> = {
   },
 };
 
+// ─── Phase 5: Puzzles Categories & Handcrafted Daily Puzzles ────────────
+export const PUZZLE_CATEGORIES = {
+  RIDDLE: 'Riddle',
+  HIDDEN_WORD: 'Hidden Word',
+  CIPHER: 'Cipher',
+  NUMBER_PATTERN: 'Number Pattern',
+  LOGIC_PUZZLE: 'Logic Puzzle',
+  DETECTIVE_STORY: 'Detective Story',
+  FILL_IN_THE_BLANK: 'Fill in the Blank',
+} as const;
+
+export type PuzzleCategory = typeof PUZZLE_CATEGORIES[keyof typeof PUZZLE_CATEGORIES];
+
+export interface DailyPuzzleDef {
+  id: string;
+  title: string;
+  question: string;
+  hint: string;
+  answer: string;
+  difficulty: 'Easy' | 'Medium' | 'Hard';
+}
+
+export const DAILY_PUZZLES: DailyPuzzleDef[] = [
+  {
+    id: 'daily_1',
+    title: "The Barista's Clock",
+    question: "I have hands but cannot clap. I never run, but I go forward. At the cafe, I tick but do not talk. What am I?",
+    hint: "Look up at the wall near the foyer.",
+    answer: "clock",
+    difficulty: "Easy"
+  },
+  {
+    id: 'daily_2',
+    title: "The Steam Riddle",
+    question: "I rise from the cup, warm and gray. I disappear into the air, but I am not smoke. What am I?",
+    hint: "It keeps your hands warm on a rainy day.",
+    answer: "steam",
+    difficulty: "Easy"
+  },
+  {
+    id: 'daily_3',
+    title: "The Secret Ingredient",
+    question: "I am sweet, brown, and melt in your mouth. Baristas use me to decorate your latte foam. What am I?",
+    hint: "Usually sprinkled as powder.",
+    answer: "chocolate",
+    difficulty: "Easy"
+  },
+  {
+    id: 'daily_4',
+    title: "The Library Key",
+    question: "I have keys but no locks. I have space but no room. You can enter, but you cannot go outside. What am I?",
+    hint: "Baristas type notes on me.",
+    answer: "keyboard",
+    difficulty: "Medium"
+  },
+  {
+    id: 'daily_5',
+    title: "The Fireplace Shadow",
+    question: "The more of them you take, the more you leave behind. What are they?",
+    hint: "You make them when you walk through the cafe door.",
+    answer: "footsteps",
+    difficulty: "Medium"
+  },
+  {
+    id: 'daily_6',
+    title: "The Bookworm's Query",
+    question: "What has many words but never speaks, has a spine but no bones, and lives on bookshelves?",
+    hint: "You are visiting the Library Corner to find me.",
+    answer: "book",
+    difficulty: "Easy"
+  },
+  {
+    id: 'daily_7',
+    title: "The Cozy Lantern",
+    question: "I shine bright in the dark, but I am not the sun. Baristas refill me with oil. What am I?",
+    hint: "Hang me near the fireplace.",
+    answer: "lantern",
+    difficulty: "Medium"
+  }
+];
+
+export function getDailyPuzzleForDate(dateStr: string): DailyPuzzleDef {
+  let seed = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    seed += dateStr.charCodeAt(i);
+  }
+  const index = seed % DAILY_PUZZLES.length;
+  return DAILY_PUZZLES[index]!;
+}
+

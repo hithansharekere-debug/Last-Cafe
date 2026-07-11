@@ -1,6 +1,6 @@
 import { redis } from '@devvit/web/server';
 import { ROOM_UNLOCK_THRESHOLDS } from '../../shared/constants';
-import type { User, Contribution, CafeState, LeaderboardEntry, TimelineEvent } from '../../shared/types';
+import type { User, Contribution, CafeState, LeaderboardEntry, TimelineEvent, CommunityPuzzle } from '../../shared/types';
 
 /**
  * Centralized Redis key generation.
@@ -17,6 +17,12 @@ export const RedisKeys = {
   personalBest: (userId: string) => `cafe:puzzle:pb:${userId}`,
   timeCapsules: () => `cafe:timecapsules:all`,
   progress: () => `cafe:state`,
+  
+  // Phase 5 Puzzles Keys
+  puzzle: (id: string) => `cafe:puzzle:${id}`,
+  puzzlesList: () => `cafe:puzzles:list`,
+  puzzlesByCategory: (category: string) => `cafe:puzzles:cat:${category}`,
+  dailySolved: (userId: string, dateStr: string) => `cafe:daily_solved:${userId}:${dateStr}`,
 } as const;
 
 // ─── Helper: build rooms list from warmth ────────────────────────────────
@@ -67,6 +73,11 @@ function createDefaultUser(userId: string, username: string): User {
       }
     ],
     favorites: [],
+
+    // Phase 5 fields
+    reputation: 0,
+    solvedPuzzles: [],
+    dailySolvedDates: [],
   };
 }
 
@@ -97,6 +108,11 @@ function syncUserLegacy(user: User): User {
   if (user.readNotesCountToday === undefined) user.readNotesCountToday = 0;
   if (!user.timeline) user.timeline = [];
   if (!user.favorites) user.favorites = [];
+
+  // Phase 5 fallbacks
+  if (user.reputation === undefined) user.reputation = 0;
+  if (!user.solvedPuzzles) user.solvedPuzzles = [];
+  if (!user.dailySolvedDates) user.dailySolvedDates = [];
   return user;
 }
 
@@ -625,6 +641,180 @@ export const RedisService = {
       return { success: true, favorites: user.favorites };
     } catch (error) {
       console.error(`Redis failure in toggleFavorite for user "${userId}" on note "${noteId}":`, error);
+      return { success: false, favorites: [] };
+    }
+  },
+
+  async getPuzzle(id: string): Promise<CommunityPuzzle | null> {
+    try {
+      const raw = await redis.get(RedisKeys.puzzle(id));
+      if (!raw) return null;
+      return safeParse<CommunityPuzzle | null>(raw, null);
+    } catch (error) {
+      console.error(`Redis failure in getPuzzle for ID "${id}":`, error);
+      return null;
+    }
+  },
+
+  async savePuzzle(puzzle: CommunityPuzzle): Promise<void> {
+    try {
+      await redis.set(RedisKeys.puzzle(puzzle.id), JSON.stringify(puzzle));
+
+      await redis.zAdd(RedisKeys.puzzlesList(), {
+        member: puzzle.id,
+        score: puzzle.createdAt,
+      });
+
+      await redis.zAdd(RedisKeys.puzzlesByCategory(puzzle.category), {
+        member: puzzle.id,
+        score: puzzle.createdAt,
+      });
+    } catch (error) {
+      console.error(`Redis failure in savePuzzle for ID "${puzzle.id}":`, error);
+    }
+  },
+
+  async getRecentPuzzles(limit: number = 50): Promise<CommunityPuzzle[]> {
+    try {
+      const ids = await redis.zRange(RedisKeys.puzzlesList(), 0, limit - 1, {
+        by: 'rank',
+        reverse: true,
+      });
+
+      const puzzles: CommunityPuzzle[] = [];
+      for (const entry of ids) {
+        const p = await this.getPuzzle(entry.member);
+        if (p) puzzles.push(p);
+      }
+      return puzzles;
+    } catch (error) {
+      console.error('Redis failure in getRecentPuzzles:', error);
+      return [];
+    }
+  },
+
+  async getPuzzlesByCategory(category: string, limit: number = 50): Promise<CommunityPuzzle[]> {
+    try {
+      const ids = await redis.zRange(RedisKeys.puzzlesByCategory(category), 0, limit - 1, {
+        by: 'rank',
+        reverse: true,
+      });
+
+      const puzzles: CommunityPuzzle[] = [];
+      for (const entry of ids) {
+        const p = await this.getPuzzle(entry.member);
+        if (p) puzzles.push(p);
+      }
+      return puzzles;
+    } catch (error) {
+      console.error(`Redis failure in getPuzzlesByCategory for "${category}":`, error);
+      return [];
+    }
+  },
+
+  async hasSolvedDaily(userId: string, dateStr: string): Promise<boolean> {
+    try {
+      const val = await redis.get(RedisKeys.dailySolved(userId, dateStr));
+      return val === 'true';
+    } catch (error) {
+      console.error(`Redis failure in hasSolvedDaily for user "${userId}":`, error);
+      return false;
+    }
+  },
+
+  async setSolvedDaily(userId: string, dateStr: string): Promise<void> {
+    try {
+      const msToMidnight = new Date().setUTCHours(24, 0, 0, 0) - Date.now();
+      const ttlSeconds = Math.max(Math.floor(msToMidnight / 1000), 60);
+      await redis.set(RedisKeys.dailySolved(userId, dateStr), 'true', {
+        expiration: new Date(Date.now() + ttlSeconds * 1000),
+      });
+    } catch (error) {
+      console.error(`Redis failure in setSolvedDaily for user "${userId}":`, error);
+    }
+  },
+
+  async likePuzzle(userId: string, puzzleId: string): Promise<{ success: boolean; likes: number; likedBy: string[]; authorUser: User | null; globalWarmth: number }> {
+    try {
+      const puzzle = await this.getPuzzle(puzzleId);
+      if (!puzzle) {
+        return { success: false, likes: 0, likedBy: [], authorUser: null, globalWarmth: 0 };
+      }
+      if (!puzzle.likedBy) puzzle.likedBy = [];
+      if (puzzle.likedBy.includes(userId)) {
+        return { success: false, likes: puzzle.likes, likedBy: puzzle.likedBy, authorUser: null, globalWarmth: 0 };
+      }
+      
+      puzzle.likedBy.push(userId);
+      puzzle.likes += 1;
+      await this.savePuzzle(puzzle);
+      
+      // Increment global warmth
+      const cafeState = await this.getCafeState();
+      cafeState.totalWarmth += 1;
+      await redis.set(RedisKeys.cafeState(), JSON.stringify(cafeState));
+      
+      // Award reputation to author (+2 reputation for getting a like)
+      const author = await this.getUser(puzzle.creatorId);
+      if (author) {
+        author.reputation += 2;
+        await this.saveUser(author);
+      }
+      
+      return {
+        success: true,
+        likes: puzzle.likes,
+        likedBy: puzzle.likedBy,
+        authorUser: author,
+        globalWarmth: cafeState.totalWarmth,
+      };
+    } catch (error) {
+      console.error(`Redis failure in likePuzzle for user "${userId}" on puzzle "${puzzleId}":`, error);
+      return { success: false, likes: 0, likedBy: [], authorUser: null, globalWarmth: 0 };
+    }
+  },
+
+  async toggleFavoritePuzzle(userId: string, puzzleId: string): Promise<{ success: boolean; favorites: string[] }> {
+    try {
+      const user = await this.getUser(userId);
+      if (!user) return { success: false, favorites: [] };
+      if (!user.favorites) user.favorites = [];
+      
+      const index = user.favorites.indexOf(puzzleId);
+      const puzzle = await this.getPuzzle(puzzleId);
+      
+      if (index === -1) {
+        user.favorites.push(puzzleId);
+        if (puzzle) {
+          if (!puzzle.favoritedBy) puzzle.favoritedBy = [];
+          if (!puzzle.favoritedBy.includes(userId)) {
+            puzzle.favoritedBy.push(userId);
+            puzzle.favorites = (puzzle.favorites || 0) + 1;
+            await this.savePuzzle(puzzle);
+          }
+          // Award creator +5 reputation for puzzle favorite
+          const author = await this.getUser(puzzle.creatorId);
+          if (author) {
+            author.reputation += 5;
+            await this.saveUser(author);
+          }
+        }
+      } else {
+        user.favorites.splice(index, 1);
+        if (puzzle) {
+          if (puzzle.favoritedBy) {
+            const fIdx = puzzle.favoritedBy.indexOf(userId);
+            if (fIdx !== -1) puzzle.favoritedBy.splice(fIdx, 1);
+          }
+          puzzle.favorites = Math.max((puzzle.favorites || 1) - 1, 0);
+          await this.savePuzzle(puzzle);
+        }
+      }
+      
+      await this.saveUser(user);
+      return { success: true, favorites: user.favorites };
+    } catch (error) {
+      console.error(`Redis failure in toggleFavoritePuzzle for user "${userId}" on puzzle "${puzzleId}":`, error);
       return { success: false, favorites: [] };
     }
   },

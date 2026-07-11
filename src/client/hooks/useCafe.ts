@@ -15,6 +15,7 @@ import type {
   LikeResponse,
   FavoriteResponse,
   DailyObjective,
+  CommunityPuzzle,
 } from '../../shared/types';
 
 export const useCafe = () => {
@@ -101,6 +102,9 @@ export const useCafe = () => {
         readNotesCountToday: 0,
         timeline: [],
         favorites: [],
+        reputation: 0,
+        solvedPuzzles: [],
+        dailySolvedDates: [],
       });
       setRooms([
         { id: 'foyer', name: 'Foyer', threshold: 0, isUnlocked: true },
@@ -430,6 +434,139 @@ export const useCafe = () => {
     }
   }, []);
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // 11. Puzzles States & Methods (Phase 5)
+  // ═══════════════════════════════════════════════════════════════════════
+  const [puzzles, setPuzzles] = useState<CommunityPuzzle[]>([]);
+
+  const fetchPuzzles = useCallback(async (category: string = 'All') => {
+    currentQueryRef.current = category;
+    setDiscoverLoading(true);
+    try {
+      const url = `/api/puzzles?filter=${encodeURIComponent(category)}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Failed to fetch puzzles ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data && currentQueryRef.current === category) {
+        setPuzzles(resData.data.puzzles || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch puzzles:', err);
+    } finally {
+      if (currentQueryRef.current === category) {
+        setDiscoverLoading(false);
+      }
+    }
+  }, []);
+
+  const publishPuzzle = useCallback(async (puzzleData: any): Promise<boolean> => {
+    if (!user || user.currentCoffeeTokens < 1) {
+      setError('You need a coffee token to leave a puzzle.');
+      return false;
+    }
+    setError(null);
+    try {
+      const res = await fetch('/api/puzzles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(puzzleData),
+      });
+      if (!res.ok) throw new Error(`Create puzzle error ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setPuzzles((prev) => [resData.data.puzzle, ...prev]);
+        setUser(resData.data.user);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to create puzzle:', err);
+      return false;
+    }
+  }, [user]);
+
+  const solvePuzzle = useCallback(async (id: string, answer: string): Promise<boolean> => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/puzzles/${id}/solve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer }),
+      });
+      if (!res.ok) throw new Error(`Solve puzzle error ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        setPuzzles((prev) =>
+          prev.map((p) => (p.id === id ? resData.data.puzzle : p))
+        );
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to solve puzzle:', err);
+      return false;
+    }
+  }, []);
+
+  const likePuzzle = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/puzzles/${id}/like`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Like puzzle error ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        setPuzzles((prev) =>
+          prev.map((p) =>
+            p.id === id
+              ? { ...p, likes: resData.data.likes, likedBy: resData.data.likedBy }
+              : p
+          )
+        );
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to like puzzle:', err);
+      return false;
+    }
+  }, []);
+
+  const favoritePuzzle = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/puzzles/${id}/favorite`, { method: 'POST' });
+      if (!res.ok) throw new Error(`Favorite puzzle error ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to toggle favorite puzzle:', err);
+      return false;
+    }
+  }, []);
+
+  const solveDaily = useCallback(async (answer: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const res = await fetch('/api/puzzle/daily/solve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ answer }),
+      });
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setUser(resData.data.user);
+        return { success: true };
+      }
+      return { success: false, error: resData.error || 'Incorrect answer. Try again.' };
+    } catch (err) {
+      console.error('Failed to solve daily puzzle:', err);
+      return { success: false, error: 'Failed to connect to the server.' };
+    }
+  }, []);
+
   return {
     user,
     cafe,
@@ -455,5 +592,14 @@ export const useCafe = () => {
     refreshState: refresh,
     claimDailyToken,
     spendToken,
+    
+    // Phase 5 exports
+    puzzles,
+    fetchPuzzles,
+    publishPuzzle,
+    solvePuzzle,
+    likePuzzle,
+    favoritePuzzle,
+    solveDaily,
   };
 };

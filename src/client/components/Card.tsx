@@ -12,14 +12,14 @@ export const Card = ({
   className = '',
   ...props
 }: CardProps) => {
-  // Base cozy styles
-  const baseStyle = 'border-2 border-[#2c160a] rounded p-4 relative overflow-hidden transition-all duration-200';
+  // Base cozy styles - rounded corners, border radius, paper feel
+  const baseStyle = 'border-2 border-[#2c160a] rounded-lg p-5 relative overflow-hidden transition-all duration-300';
   
   // Shadow/Elevation styles
   const elevationStyles = {
     none: '',
-    low: 'shadow-[2px_2px_0px_rgba(44,22,10,1)]',
-    high: 'shadow-[4px_4px_0px_rgba(44,22,10,1)] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_rgba(44,22,10,1)]',
+    low: 'shadow-[3px_3px_0px_#2c160a]',
+    high: 'shadow-[4px_4px_0px_#2c160a] hover:translate-y-[-3px] hover:translate-x-[-1px] hover:shadow-[6px_6px_0px_#2c160a]',
   };
 
   // Variant/Theme styles
@@ -41,7 +41,7 @@ export const Card = ({
     >
       {/* Subtle top decoration for parchment card like a letter or journal binding */}
       {variant === 'parchment' && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-[#cf7929]/20" />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#cf7929]/30" />
       )}
       
       {/* Torn corner effect for napkins */}
@@ -53,3 +53,4 @@ export const Card = ({
     </div>
   );
 };
+export default Card;
