@@ -30,14 +30,14 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
   // Set max widths matching the responsive specs:
   // Desktop: 700px - 800px, Tablet: 90%, Phone: 95%
   const widthClass = size === 'lg' 
-    ? 'w-[95vw] sm:w-[90vw] md:w-[760px]' 
+    ? 'w-[95%] sm:w-[90%] md:w-[760px] max-w-full' 
     : size === 'md' 
-    ? 'w-[95vw] sm:w-[90vw] md:w-[560px]' 
-    : 'w-[95vw] sm:w-[90vw] md:w-[400px]';
+    ? 'w-[95%] sm:w-[90%] md:w-[560px] max-w-full' 
+    : 'w-[95%] sm:w-[90%] md:w-[400px] max-w-full';
 
   const modalElement = (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-md bg-[#26140b]/75 transition-all duration-300"
+      className="absolute inset-0 z-[9999] flex items-center justify-center p-md bg-[#26140b]/75 transition-all duration-300"
       onClick={onClose}
     >
       {/* Modal panel with wooden/parchment board aesthetic */}
@@ -70,7 +70,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     </div>
   );
 
-  return ReactDOM.createPortal(modalElement, document.body);
+  return modalElement;
 };
 
 // Modal helpers for structured header/body/footer modals:

@@ -41,7 +41,7 @@
   --shadow-warm-glow: 0 0 12px rgba(198, 150, 90, 0.35);
   
   /* Layout constraints */
-  --app-max-width: 480px;
+  --app-max-width: 1200px;
 }
 
 /* Reset and Globals */
@@ -213,6 +213,7 @@ body {
   flex-direction: column;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 /* Wood Planking Borders / Bars */
@@ -666,11 +667,11 @@ input, textarea, select {
 
 /* Responsive Modal Styling overrides */
 .modal-panel-responsive {
-  max-height: 90vh;
+  max-height: 90% !important;
 }
 @media (min-width: 640px) {
   .modal-panel-responsive {
-    max-height: 80vh;
+    max-height: 85% !important;
   }
 }
 

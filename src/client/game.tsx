@@ -8,6 +8,7 @@ import { useCafe } from './hooks/useCafe';
 
 import { Header } from './components/Header';
 import { PuzzleCreatorModal } from './components/PuzzleCreatorModal';
+import { NoteComposerModal } from './components/NoteComposerModal';
 import { LoadingState } from './components/LoadingState';
 import { Button } from './components/Button';
 
@@ -54,6 +55,7 @@ const AppContent = () => {
   } = useCafe();
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+  const [isNoteComposerOpen, setIsNoteComposerOpen] = useState(false);
   const [discoverFilter, setDiscoverFilter] = useState('All');
 
   // Toast State
@@ -155,6 +157,10 @@ const AppContent = () => {
     setIsComposerOpen(true);
   }, []);
 
+  const handleOpenNoteComposer = useCallback(() => {
+    setIsNoteComposerOpen(true);
+  }, []);
+
   const handleFilterChange = useCallback((filter: string) => {
     setDiscoverFilter(filter);
     void fetchPuzzles(filter);
@@ -232,7 +238,7 @@ const AppContent = () => {
             contributions={contributions}
             canClaimCoffee={canClaimCoffee}
             onClaimToken={handleClaimCoffee}
-            onOpenComposer={handleOpenComposer}
+            onOpenComposer={handleOpenNoteComposer}
           />
         );
       case 'table':
@@ -290,15 +296,29 @@ const AppContent = () => {
           <main className="flex-1 overflow-hidden flex flex-col font-serif">
             {renderScreen()}
           </main>
+
+          <PuzzleCreatorModal
+            isOpen={isComposerOpen}
+            onClose={() => setIsComposerOpen(false)}
+            currentTokens={user?.currentCoffeeTokens ?? 0}
+            onPublishPuzzle={handlePublishPuzzle}
+          />
+
+          <NoteComposerModal
+            isOpen={isNoteComposerOpen}
+            onClose={() => setIsNoteComposerOpen(false)}
+            currentTokens={user?.currentCoffeeTokens ?? 0}
+            onSpendToken={async (category, text, targetDate) => {
+              const success = await addContribution(category, text, targetDate);
+              if (success) {
+                showToast('Note pinned to the community board! 📝', 'success');
+                void refresh();
+              }
+              return success;
+            }}
+          />
         </div>
       </ResponsiveFrame>
-
-      <PuzzleCreatorModal
-        isOpen={isComposerOpen}
-        onClose={() => setIsComposerOpen(false)}
-        currentTokens={user?.currentCoffeeTokens ?? 0}
-        onPublishPuzzle={handlePublishPuzzle}
-      />
 
       {/* Milestone celebration overlay */}
       {celebrationMessage && (

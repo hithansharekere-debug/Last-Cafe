@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Modal } from './Modal';
+import { Modal, ModalBody, ModalFooter } from './Modal';
 import { Button } from './Button';
 import { CONTRIBUTION_CATEGORIES } from '../../shared/constants';
 import type { ContributionCategory } from '../../shared/constants';
@@ -69,74 +69,88 @@ export const NoteComposerModal = ({
       title="Leave a Note for the Cafe"
     >
       {successMessage ? (
-        <div className="flex flex-col items-center gap-3 py-4 text-center">
+        <ModalBody className="flex flex-col items-center gap-3 py-16 text-center animate-fade-in">
           <span className="text-4xl animate-bounce">📝</span>
-          <p className="font-serif text-sm text-[#2c160a] leading-relaxed font-bold">
+          <p className="font-sans text-sm text-[var(--color-dark-walnut)] leading-relaxed font-bold">
             {successMessage}
           </p>
-        </div>
+        </ModalBody>
       ) : (
-        <div className="flex flex-col gap-4">
-          {/* Category selection */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-serif text-xs font-bold text-[#2c160a]">Category</label>
-            <div className="flex flex-wrap gap-1.5 flex-row">
-              {Object.values(CONTRIBUTION_CATEGORIES).map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 text-xs font-serif rounded-md border-2 border-[#2c160a] transition-all cursor-pointer shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none font-bold ${
-                    selectedCategory === cat
-                      ? 'bg-[#cf7929] text-[#fdfaf2]'
-                      : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#c8a285]'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Note text */}
-          <div className="flex flex-col gap-1.5">
-            <label className="font-serif text-xs font-bold text-[#2c160a]">Your Note</label>
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              placeholder="Write something worth leaving behind…"
-              maxLength={250}
-              rows={4}
-              className="w-full rounded border-2 border-[#2c160a] p-2.5 font-serif text-sm text-[#26140b] resize-none bg-[#f7edd7] placeholder:italic placeholder:text-[#c8a285] focus:outline-none focus:border-[#cf7929]"
-            />
-            <span className="font-mono text-[10px] text-[#5e463a] text-right">
-              {noteText.length}/250
-            </span>
-          </div>
-
-          {/* Time Capsule date */}
-          {selectedCategory === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && (
+        <>
+          <ModalBody className="flex flex-col gap-md">
+            {/* Category selection */}
             <div className="flex flex-col gap-1.5">
-              <label className="font-serif text-xs font-bold text-[#2c160a]">Unlock Date</label>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={(e) => setTargetDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full rounded border-2 border-[#2c160a] p-2 font-serif text-sm bg-[#f7edd7] text-[#26140b] focus:outline-none focus:border-[#cf7929]"
-              />
-              <p className="font-serif text-[10px] text-[#5e463a] italic">
-                Your note will only appear after this date.
-              </p>
+              <label className="font-sans text-xs font-bold text-[var(--color-dark-walnut)] uppercase tracking-wider mb-2 select-none">
+                Category
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {Object.values(CONTRIBUTION_CATEGORIES).map((cat) => {
+                  const isActive = selectedCategory === cat;
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3 py-1.5 text-xs font-sans rounded-md border-2 border-[var(--color-border-dark)] transition-all cursor-pointer shadow-[0_2.5px_0px_var(--color-border-dark)] active:translate-y-[1px] active:shadow-none font-bold ${
+                        isActive
+                          ? 'bg-[var(--color-caramel)] text-[var(--color-text-light)]'
+                          : 'bg-[var(--color-cream)] text-[var(--color-dark-walnut)] hover:bg-[var(--color-paper-shadow)]'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          )}
 
-          {errorMessage && (
-            <p className="text-xs text-[#cf7929] font-serif italic text-center font-bold">
-              {errorMessage}
-            </p>
-          )}
+            {/* Note text */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex justify-between items-center mb-1">
+                <label className="font-sans text-xs font-bold text-[var(--color-dark-walnut)] uppercase tracking-wider select-none">
+                  Your Note
+                </label>
+                <span className="font-mono text-[10px] text-[var(--color-text-muted)] select-none">
+                  {noteText.length}/250
+                </span>
+              </div>
+              <textarea
+                value={noteText}
+                onChange={(e) => setNoteText(e.target.value)}
+                placeholder="Write something worth leaving behind…"
+                maxLength={250}
+                rows={4}
+                className="w-full rounded border-2 border-[var(--color-border-dark)] p-2.5 font-sans text-sm text-[var(--color-espresso)] resize-none bg-[var(--color-cream)] placeholder:italic placeholder:text-[var(--color-text-muted)]/60 focus:outline-none focus:border-[var(--color-caramel)]"
+              />
+            </div>
 
-          <div className="flex gap-2">
+            {/* Time Capsule date */}
+            {selectedCategory === CONTRIBUTION_CATEGORIES.TIME_CAPSULE && (
+              <div className="flex flex-col gap-1.5">
+                <label className="font-sans text-xs font-bold text-[var(--color-dark-walnut)] uppercase tracking-wider select-none">
+                  Unlock Date
+                </label>
+                <input
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full rounded border-2 border-[var(--color-border-dark)] p-2 font-sans text-sm bg-[var(--color-cream)] text-[var(--color-espresso)] focus:outline-none focus:border-[var(--color-caramel)]"
+                />
+                <p className="font-sans text-[10px] text-[var(--color-text-muted)] italic select-none">
+                  Your note will only appear after this date.
+                </p>
+              </div>
+            )}
+
+            {errorMessage && (
+              <p className="text-xs text-[var(--color-warm-red)] font-sans italic text-center font-bold">
+                {errorMessage}
+              </p>
+            )}
+          </ModalBody>
+
+          <ModalFooter className="flex-col sm:flex-row gap-md">
             <Button
               variant="outline"
               size="md"
@@ -155,8 +169,8 @@ export const NoteComposerModal = ({
             >
               {isSubmitting ? 'Placing note…' : `Leave note (1 token)`}
             </Button>
-          </div>
-        </div>
+          </ModalFooter>
+        </>
       )}
     </Modal>
   );
