@@ -101,10 +101,10 @@ export const CafeScreen = ({
             backgroundSize: '16px 16px',
           }}
         >
-          <div className="flex justify-between items-center gap-md mb-3">
+          <div className="flex justify-between items-center gap-lg mb-3">
             <div>
               <PageTitle>☕ The Cozy Cafe</PageTitle>
-              <Caption className="italic mt-2 block">Pull up a chair. Stay a while.</Caption>
+              <Caption className="italic mt-3 block">Pull up a chair. Stay a while.</Caption>
             </div>
             <div className="text-right select-none shrink-0">
               <span className="font-sans text-xs bg-[var(--color-border-dark)] text-[var(--color-text-light)] px-3 py-1.5 rounded-lg border-2 border-[var(--color-border-dark)] shadow-[0_3px_0px_var(--color-caramel)] font-bold">
@@ -114,7 +114,7 @@ export const CafeScreen = ({
           </div>
 
           {/* Global Progress toward unlocking rooms */}
-          <div className="mt-6">
+          <div className="mt-7">
             <ProgressBar
               value={cafe.totalWarmth}
               max={nextThreshold}
@@ -168,7 +168,7 @@ export const CafeScreen = ({
                 {isClaiming ? 'Brewing...' : canClaimCoffee ? '☕ Brew Coffee' : 'Brewed'}
               </Button>
               {!canClaimCoffee && (
-                <span className="font-mono text-xs bg-[var(--color-cream)] px-3 py-2.5 rounded-md border-2 border-[var(--color-border-dark)] text-[var(--color-text-muted)] select-none font-bold">
+                <span className="font-mono text-xs bg-[var(--color-cream)] px-3 h-11 rounded-md border-2 border-[var(--color-border-dark)] text-[var(--color-text-muted)] select-none font-bold flex items-center justify-center shrink-0">
                   {formatCountdown(msUntilMidnight)}
                 </span>
               )}
@@ -187,10 +187,10 @@ export const CafeScreen = ({
               </BodyText>
             </div>
 
-            <div>
+            <div className="flex items-center w-full">
               {!hasTokens ? (
-                <div className="p-sm bg-[var(--color-cream)]/30 border-2 border-dashed border-[var(--color-bronze)] rounded-md text-center select-none">
-                  <Caption className="italic font-bold text-[var(--color-caramel)]">
+                <div className="h-11 px-3 bg-[var(--color-cream)]/30 border-2 border-dashed border-[var(--color-bronze)] rounded-md text-center select-none flex items-center justify-center w-full">
+                  <Caption className="italic font-bold text-[var(--color-caramel)] leading-none select-none">
                     Finish today's coffee to earn more tokens.
                   </Caption>
                 </div>

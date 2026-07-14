@@ -284,16 +284,16 @@ input, textarea, select {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto auto;
-  gap: 10px;
+  gap: 12px;
   background-color: var(--color-border-dark);
-  padding: 10px;
-  border-radius: 8px;
+  padding: 12px;
+  border-radius: 12px;
   border: 2px solid var(--color-border-dark);
   box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.45);
 }
 
 .blueprint-room {
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 12px;
   display: flex;
   flex-direction: column;
@@ -303,6 +303,7 @@ input, textarea, select {
   transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.2);
   position: relative;
   overflow: hidden;
+  min-height: 80px;
 }
 
 .blueprint-room.locked {

@@ -170,12 +170,12 @@ export const CafeFloorPlan = ({ user, rooms, totalWarmth }: CafeFloorPlanProps) 
   };
 
   return (
-    <div className="flex flex-col w-full p-4 rounded-lg border-2 border-[#2c160a] bg-[#f7edd7]/50 shadow-[3px_3px_0px_#2c160a] mb-4">
-      <div className="flex justify-between items-center mb-3">
-        <span className="font-serif font-bold text-xs uppercase tracking-wider text-[#2c160a]">
+    <div className="flex flex-col w-full p-5 rounded-lg border-2 border-[var(--color-border-dark)] bg-[var(--color-cream)]/50 shadow-[0_4px_0px_var(--color-border-dark)]">
+      <div className="flex justify-between items-center mb-5">
+        <span className="font-sans font-bold text-xs uppercase tracking-wider text-[var(--color-dark-walnut)]">
           🏛️ Cafe Miniature Blueprint
         </span>
-        <span className="font-mono text-[10px] text-[#5e463a] bg-[#eeded1] px-2 py-0.5 rounded border border-[#2c160a] select-none font-bold">
+        <span className="font-sans text-[10px] text-[var(--color-dark-walnut)] bg-[var(--color-cream)] px-2.5 py-1 rounded border border-[var(--color-border-dark)] select-none font-bold shadow-[0_2px_0px_var(--color-border-dark)]">
           🔥 {totalWarmth} Warmth
         </span>
       </div>
@@ -195,28 +195,28 @@ export const CafeFloorPlan = ({ user, rooms, totalWarmth }: CafeFloorPlanProps) 
       </div>
 
       {/* Selected Room Details Drawer */}
-      <div className="mt-3 min-h-[60px] p-3 rounded-lg border-2 border-[#2c160a] bg-[#fdfaf2] font-serif text-xs transition-all duration-200">
+      <div className="mt-4 min-h-[60px] p-4 rounded-lg border-2 border-[var(--color-border-dark)] bg-[var(--color-cream)] shadow-[0_3px_0px_var(--color-border-dark)] font-sans text-xs transition-all duration-200">
         {selectedRoomId ? (
           <div>
-            <div className="flex items-center gap-1.5 font-bold text-[#2c160a] mb-1">
-              <span className="select-none">{ROOM_THEMES[selectedRoomId]?.symbol}</span>
-              <span className="capitalize">{selectedRoomId.replace('_', ' ')}</span>
+            <div className="flex items-center gap-1.5 font-bold text-[var(--color-dark-walnut)] mb-2">
+              <span className="select-none text-base">{ROOM_THEMES[selectedRoomId]?.symbol}</span>
+              <span className="capitalize text-sm">{selectedRoomId.replace('_', ' ')}</span>
               {isRoomUnlocked(selectedRoomId) ? (
-                <span className="text-[9px] bg-[#4a7c59] text-white px-1.5 rounded ml-1 font-mono font-normal">
+                <span className="text-[9px] bg-[var(--color-sage)] text-[var(--color-text-light)] px-1.5 py-0.5 rounded ml-1.5 font-sans font-bold select-none">
                   UNLOCKED
                 </span>
               ) : (
-                <span className="text-[9px] bg-[#cf7929] text-white px-1.5 rounded ml-1 font-mono font-normal">
+                <span className="text-[9px] bg-[var(--color-caramel)] text-[var(--color-text-light)] px-1.5 py-0.5 rounded ml-1.5 font-sans font-bold select-none">
                   LOCKED
                 </span>
               )}
             </div>
-            <p className="text-[#5e463a] italic mb-2 leading-relaxed">
+            <p className="text-[var(--color-espresso)] italic mb-3 leading-relaxed">
               {getRoomDescription(selectedRoomId)}
             </p>
             {isRoomUnlocked(selectedRoomId) && (
-              <div className="flex flex-col gap-1.5 mt-2">
-                <span className="font-bold text-[#2c160a] text-[10px]">Room Decorations:</span>
+              <div className="flex flex-col gap-1.5 mt-3">
+                <span className="font-bold text-[var(--color-dark-walnut)] text-[11px]">Room Decorations:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.values(DECORATION_DEFINITIONS)
                     .filter((dec) => dec.roomId === selectedRoomId)
@@ -228,8 +228,8 @@ export const CafeFloorPlan = ({ user, rooms, totalWarmth }: CafeFloorPlanProps) 
                           title={unlockedDecor ? dec.description : dec.unlockHint}
                           className={`px-2 py-0.5 rounded border-2 transition-all select-none flex items-center gap-1 text-[9px] ${
                             unlockedDecor
-                              ? 'bg-[#eeded1] border-[#2c160a] text-[#2c160a] font-bold shadow-[1.5px_1.5px_0px_#2c160a]'
-                              : 'bg-[#c8a285]/10 border-dashed border-[#8e8076] text-gray-500 opacity-60'
+                              ? 'bg-[var(--color-cream)] border-[var(--color-border-dark)] text-[var(--color-dark-walnut)] font-bold shadow-[0_2px_0px_var(--color-border-dark)]'
+                              : 'bg-[var(--color-cream)]/30 border-dashed border-[var(--color-text-muted)] text-[var(--color-text-muted)] opacity-60'
                           }`}
                         >
                           <span>{dec.icon}</span>
@@ -243,7 +243,7 @@ export const CafeFloorPlan = ({ user, rooms, totalWarmth }: CafeFloorPlanProps) 
             )}
           </div>
         ) : (
-          <p className="text-center italic text-[#c8a285] py-2.5 select-none">
+          <p className="text-center italic text-[var(--color-text-muted)] py-2.5 select-none font-bold">
             Click on any blueprint room above to inspect its cozy details.
           </p>
         )}
