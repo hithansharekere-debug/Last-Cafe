@@ -12,14 +12,14 @@ export const Card = ({
   className = '',
   ...props
 }: CardProps) => {
-  // Base cozy styles - rounded corners, border radius, paper feel
-  const baseStyle = 'border-2 border-[#2c160a] rounded-lg p-5 relative overflow-hidden transition-all duration-300';
+  // Base cozy styles - rounded corners, border-radius, paper feel, 8px grid padding (24px)
+  const baseStyle = 'border-2 border-[#2c160a] rounded-lg p-24 relative overflow-hidden transition-all duration-300';
   
   // Shadow/Elevation styles
   const elevationStyles = {
     none: '',
     low: 'shadow-[3px_3px_0px_#2c160a]',
-    high: 'shadow-[4px_4px_0px_#2c160a] hover:translate-y-[-3px] hover:translate-x-[-1px] hover:shadow-[6px_6px_0px_#2c160a]',
+    high: 'shadow-[4px_4px_0px_#2c160a] hover:-translate-y-0.5 hover:-translate-x-0.5 hover:shadow-[6px_6px_0px_#2c160a]',
   };
 
   // Variant/Theme styles

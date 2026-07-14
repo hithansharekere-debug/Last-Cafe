@@ -466,3 +466,104 @@ input, textarea, select {
   .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
+/* Polished 8px Grid Spacing Utilities */
+.p-4 { padding: 4px; }
+.p-8 { padding: 8px; }
+.p-16 { padding: 16px; }
+.p-24 { padding: 24px; }
+.p-32 { padding: 32px; }
+.p-48 { padding: 48px; }
+.p-64 { padding: 64px; }
+
+.px-4 { padding-left: 4px; padding-right: 4px; }
+.px-8 { padding-left: 8px; padding-right: 8px; }
+.px-16 { padding-left: 16px; padding-right: 16px; }
+.px-24 { padding-left: 24px; padding-right: 24px; }
+.px-32 { padding-left: 32px; padding-right: 32px; }
+.px-48 { padding-left: 48px; padding-right: 48px; }
+.px-64 { padding-left: 64px; padding-right: 64px; }
+
+.py-4 { padding-top: 4px; padding-bottom: 4px; }
+.py-8 { padding-top: 8px; padding-bottom: 8px; }
+.py-16 { padding-top: 16px; padding-bottom: 16px; }
+.py-24 { padding-top: 24px; padding-bottom: 24px; }
+.py-32 { padding-top: 32px; padding-bottom: 32px; }
+.py-48 { padding-top: 48px; padding-bottom: 48px; }
+.py-64 { padding-top: 64px; padding-bottom: 64px; }
+
+.mb-4 { margin-bottom: 4px; }
+.mb-8 { margin-bottom: 8px; }
+.mb-16 { margin-bottom: 16px; }
+.mb-24 { margin-bottom: 24px; }
+.mb-32 { margin-bottom: 32px; }
+.mb-48 { margin-bottom: 48px; }
+.mb-64 { margin-bottom: 64px; }
+
+.mt-4 { margin-top: 4px; }
+.mt-8 { margin-top: 8px; }
+.mt-16 { margin-top: 16px; }
+.mt-24 { margin-top: 24px; }
+.mt-32 { margin-top: 32px; }
+.mt-48 { margin-top: 48px; }
+.mt-64 { margin-top: 64px; }
+
+.mx-4 { margin-left: 4px; margin-right: 4px; }
+.mx-8 { margin-left: 8px; margin-right: 8px; }
+.mx-16 { margin-left: 16px; margin-right: 16px; }
+.mx-24 { margin-left: 24px; margin-right: 24px; }
+.mx-32 { margin-left: 32px; margin-right: 32px; }
+.mx-48 { margin-left: 48px; margin-right: 48px; }
+.mx-64 { margin-left: 64px; margin-right: 64px; }
+
+.gap-4 { gap: 4px; }
+.gap-8 { gap: 8px; }
+.gap-16 { gap: 16px; }
+.gap-24 { gap: 24px; }
+.gap-32 { gap: 32px; }
+.gap-48 { gap: 48px; }
+.gap-64 { gap: 64px; }
+
+.w-calc { width: calc(100% - 48px); }
+
+/* Typography system class definitions */
+.text-hero {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  font-size: 34px;
+}
+@media (min-width: 768px) {
+  .text-hero {
+    font-size: 48px;
+  }
+}
+
+.text-section {
+  font-family: var(--font-serif);
+  font-weight: bold;
+  font-size: 28px;
+}
+
+.text-card-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.text-body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.text-caption {
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.text-nav {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+
