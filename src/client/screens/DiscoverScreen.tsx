@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { PuzzleCard } from '../components/PuzzleCard';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { PageTitle } from '../components/Typography';
 import type { CommunityPuzzle, User } from '../../shared/types';
 
 interface DiscoverScreenProps {
@@ -49,20 +50,16 @@ export const DiscoverScreen = ({
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header + filters */}
-      <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--color-cream)',
-          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      >
-        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] mb-1">🔍 Discover Feed</h2>
-        <p className="font-sans text-xs text-[var(--color-text-muted)] italic mb-3">
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
+          <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">🔎</span>
+          <PageTitle>Discover</PageTitle>
+        </div>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed" style={{ margin: '0 0 12px 0' }}>
           Explore templates-based puzzles posted by players around the world.
         </p>
 
-        <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-1.5 overflow-x-auto pb-1 mt-3.5" style={{ scrollbarWidth: 'none' }}>
           {FILTER_OPTIONS.map(({ label, value, icon }) => {
             const isActive = activeFilter === value;
             return (
@@ -90,7 +87,7 @@ export const DiscoverScreen = ({
             <SkeletonLoader type="feed" count={3} />
           </div>
         ) : puzzles.length === 0 ? (
-          <div className="p-5">
+          <div className="p-lg">
             <EmptyState
               icon={activeFilter === 'Favorites' ? '⭐' : '🔍'}
               title={activeFilter === 'Favorites' ? 'No Favorites Yet' : 'Quiet Shelves'}
@@ -98,13 +95,13 @@ export const DiscoverScreen = ({
                 activeFilter === 'All'
                   ? 'No community puzzles found on the mystery wall today.'
                   : activeFilter === 'Favorites'
-                  ? 'Tap the star icon on any mystery card to save it here.'
-                  : `No entries found under the ${activeFilter.toLowerCase()} category.`
+                  ? "Puzzles you mark as favorite will show up here."
+                  : `No community puzzles matching "${activeFilter}" category yet.`
               }
             />
           </div>
         ) : (
-          <div className="flex flex-col gap-4.5 p-5">
+          <div className="flex flex-col gap-4.5 p-lg">
             {puzzles.map((puzzle) => (
               <PuzzleCard
                 key={puzzle.id}

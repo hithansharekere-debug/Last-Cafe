@@ -3,6 +3,7 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonLoader } from '../components/SkeletonLoader';
+import { PageTitle } from '../components/Typography';
 import type { LeaderboardEntry } from '../../shared/types';
 
 interface PuzzleCornerScreenProps {
@@ -88,23 +89,19 @@ export const PuzzleCornerScreen = ({
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header */}
-      <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--color-cream)',
-          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      >
-        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] mb-1">🧩 Puzzle Corner</h2>
-        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed">
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
+          <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">🧩</span>
+          <PageTitle>Puzzle Corner</PageTitle>
+        </div>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed" style={{ margin: '0 0 12px 0' }}>
           Daily handcrafted challenges. Solve to earn Coffee Tokens and reputation.
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-6">
+      <div className="flex-1 overflow-y-auto p-lg flex flex-col gap-lg pb-8">
         {/* Handcrafted Daily Puzzle Card */}
-        <div className="p-5">
+        <div>
           {dailyPuzzle ? (
             <Card variant="wood" elevation="high" className="p-6 border-2 border-[var(--color-border-dark)] relative">
               {/* Daily tag */}
@@ -194,7 +191,7 @@ export const PuzzleCornerScreen = ({
         </div>
 
         {/* Leaderboard */}
-        <div className="px-5">
+        <div>
           <h3 className="font-sans font-bold text-sm text-[var(--color-dark-walnut)] mb-3 flex items-center gap-2 px-1">
             <span>🏆</span> Tangram Speed Leaderboard
           </h3>

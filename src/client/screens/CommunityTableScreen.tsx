@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { EmptyState } from '../components/EmptyState';
 import { SkeletonLoader } from '../components/SkeletonLoader';
 import { PuzzleCard } from '../components/PuzzleCard';
+import { PageTitle } from '../components/Typography';
 import type { CommunityPuzzle, User } from '../../shared/types';
 
 interface CommunityTableScreenProps {
@@ -32,16 +33,12 @@ export const CommunityTableScreen = ({
   return (
     <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header */}
-      <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--color-cream)',
-          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      >
-        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] leading-tight">🪑 The Community Table</h2>
-        <p className="font-sans text-xs text-[var(--color-text-muted)] italic mt-1 leading-relaxed">
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
+          <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">🪑</span>
+          <PageTitle>Community Table</PageTitle>
+        </div>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed" style={{ margin: '0 0 12px 0' }}>
           Cozy mysteries left behind by other visitors. Solve them to gain reputation.
         </p>
       </div>
@@ -53,7 +50,7 @@ export const CommunityTableScreen = ({
             <SkeletonLoader type="feed" count={3} />
           </div>
         ) : puzzles.length === 0 ? (
-          <div className="p-5">
+          <div className="p-lg">
             <EmptyState
               icon="📭"
               title="No mysteries pinned"
@@ -63,7 +60,7 @@ export const CommunityTableScreen = ({
             />
           </div>
         ) : (
-          <div className="flex flex-col gap-4.5 p-5">
+          <div className="flex flex-col gap-4.5 p-lg">
             {puzzles.map((puzzle) => (
               <PuzzleCard
                 key={puzzle.id}

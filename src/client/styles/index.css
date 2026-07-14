@@ -219,14 +219,6 @@ body {
 /* Wood Planking Borders / Bars */
 .wood-plank-bg {
   background-color: var(--color-wood-medium);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.04) 1px,
-    transparent 1px,
-    transparent 45px,
-    rgba(0, 0, 0, 0.12) 46px,
-    transparent 47px
-  );
   border-bottom: var(--border-vintage);
   color: var(--color-text-light);
 }
@@ -818,6 +810,237 @@ button:active:not(:disabled), .button-cozy:active:not(:disabled) {
 @media (min-width: 640px) {
   .p-lg {
     padding: 24px !important;
+  }
+}
+
+/* Navigation and status badge styling rules */
+.wood-nav-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+}
+
+.wood-nav-tab {
+  height: 44px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-sizing: border-box;
+  padding: 0 14px;
+}
+.wood-nav-tab .text-base {
+  font-size: 16px;
+}
+
+/* Inactive and Active navigation states */
+.wood-nav-tab.inactive {
+  color: #F8F2E8 !important;
+  background-color: transparent !important;
+  border: 2px solid transparent !important;
+  font-weight: 600 !important;
+  box-shadow: none !important;
+}
+.wood-nav-tab.inactive:hover {
+  color: #FFE2A8 !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-1px) !important;
+}
+.wood-nav-tab.inactive:active {
+  transform: translateY(0) !important;
+}
+.wood-nav-tab.active {
+  color: #3B271C !important; /* Dark Walnut */
+  background-color: #F7E9D3 !important; /* Warm Parchment */
+  border: 2px solid #C6965A !important; /* Caramel border */
+  border-radius: 13px !important; /* 12-14px border radius */
+  font-weight: 700 !important;
+  box-shadow: inset 0 1px 3.5px rgba(255, 255, 255, 0.45), 0 3.5px 6.5px rgba(59, 39, 28, 0.2) !important; /* Small inset shadow + soft outer shadow */
+  transform: translateY(-1.5px) !important; /* Lifted selected look */
+}
+
+/* Unified Status Area components */
+.header-unified-badge {
+  height: 44px;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  border: 2px solid #9B7653 !important;
+  background-color: #F7E9D3 !important;
+  color: #4B3528 !important;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 0px rgba(44, 22, 10, 0.35) !important;
+  user-select: none;
+  white-space: nowrap !important;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.header-unified-brew-btn {
+  border: none;
+  background: transparent;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 800;
+  color: #8C6846;
+  cursor: pointer;
+  padding: 0 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  outline: none;
+}
+@media (max-width: 640px) {
+  .header-unified-brew-btn {
+    font-size: 11px;
+    padding: 0 12px;
+  }
+}
+.header-unified-brew-btn:hover {
+  color: #4B3528;
+  background-color: rgba(155, 118, 83, 0.1);
+}
+.header-unified-brew-btn:active {
+  background-color: rgba(155, 118, 83, 0.2);
+}
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 24px 24px 16px 24px !important; /* Top padding: 24px, Bottom padding: 16px */
+  border-bottom: 2px solid var(--color-border-dark);
+  flex-shrink: 0;
+  background-color: var(--color-cream);
+  background-image: radial-gradient(var(--color-paper-shadow) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+@media (max-width: 640px) {
+  .page-header {
+    padding: 24px 16px 16px 16px !important;
+  }
+}
+
+/* ====================================================
+   RESPONSIVE VIEWPORT STYLING RULES
+   ==================================================== */
+
+/* --- Mobile Viewport Rules (<700px) --- */
+@media (max-width: 699px) {
+  .wood-nav-container {
+    gap: 8px !important;
+  }
+  .wood-nav-tab {
+    height: 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .wood-nav-tab .nav-tab-label {
+    display: none !important; /* Icons ONLY on mobile */
+  }
+  .wood-nav-tab .text-base {
+    font-size: 16px !important;
+  }
+  
+  /* Status area mobile display overrides */
+  .status-badge-desktop {
+    display: none !important;
+  }
+  .status-badge-mobile {
+    display: inline !important;
+  }
+  .status-brewed-desktop {
+    display: none !important;
+  }
+  .status-brewed-mobile {
+    display: inline !important;
+  }
+  .header-unified-brew-btn {
+    font-size: 11px !important;
+    padding: 0 10px !important;
+  }
+}
+
+/* --- Desktop Viewport Rules (700px - 1199px) --- */
+@media (min-width: 700px) and (max-width: 1199px) {
+  .wood-nav-container {
+    justify-content: space-evenly !important;
+    height: 52px !important;
+  }
+  .wood-nav-tab {
+    height: 44px !important;
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+  }
+  .wood-nav-tab .nav-tab-label {
+    display: none !important; /* Icons ONLY on desktop screen sizes */
+  }
+  .wood-nav-tab .text-base {
+    font-size: 18px !important; /* Touch targets around 28-30px equivalents */
+  }
+  
+  /* Status area desktop display overrides */
+  .status-badge-desktop {
+    display: inline !important;
+  }
+  .status-badge-mobile {
+    display: none !important;
+  }
+  .status-brewed-desktop {
+    display: inline !important;
+  }
+  .status-brewed-mobile {
+    display: none !important;
+  }
+}
+
+/* --- Fullscreen Viewport Rules (>=1200px) --- */
+@media (min-width: 1200px) {
+  .wood-nav-container {
+    gap: 28px !important; /* Large spacing */
+  }
+  .wood-nav-tab {
+    height: 44px !important;
+    padding: 0 16px !important;
+  }
+  .wood-nav-tab .nav-tab-label {
+    display: inline !important; /* Text and icons visible */
+  }
+  
+  /* Status area fullscreen display overrides */
+  .status-badge-desktop {
+    display: inline !important;
+  }
+  .status-badge-mobile {
+    display: none !important;
+  }
+  .status-brewed-desktop {
+    display: inline !important;
+  }
+  .status-brewed-mobile {
+    display: none !important;
   }
 }
 

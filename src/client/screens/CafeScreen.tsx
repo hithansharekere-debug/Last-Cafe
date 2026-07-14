@@ -103,8 +103,11 @@ export const CafeScreen = ({
         >
           <div className="flex justify-between items-center gap-lg mb-3">
             <div>
-              <PageTitle>☕ The Cozy Cafe</PageTitle>
-              <Caption className="italic mt-3 block">Pull up a chair. Stay a while.</Caption>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
+                <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">☕</span>
+                <PageTitle>The Cozy Cafe</PageTitle>
+              </div>
+              <Caption className="italic block" style={{ margin: '0 0 12px 0' }}>Pull up a chair. Stay a while.</Caption>
             </div>
             <div className="text-right select-none shrink-0">
               <span className="font-sans text-xs bg-[var(--color-border-dark)] text-[var(--color-text-light)] px-3 py-1.5 rounded-lg border-2 border-[var(--color-border-dark)] shadow-[0_3px_0px_var(--color-caramel)] font-bold">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card } from '../components/Card';
 import { ProgressBar } from '../components/ProgressBar';
 import { EmptyState } from '../components/EmptyState';
+import { PageTitle } from '../components/Typography';
 import { ACHIEVEMENT_DEFINITIONS } from '../../shared/constants';
 import type { User, CafeState, DailyObjective } from '../../shared/types';
 
@@ -334,16 +335,20 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
   };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
-      {/* Profile Card Header */}
-      <div
-        className="px-4 py-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
-        style={{
-          backgroundColor: 'var(--color-cream)',
-          backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
-          backgroundSize: '16px 16px',
-        }}
-      >
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in font-serif">
+      {/* Page Header */}
+      <div className="page-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
+          <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">📚</span>
+          <PageTitle>Library</PageTitle>
+        </div>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed" style={{ margin: '0 0 12px 0' }}>
+          Your visitor credentials, streaks, badges, and cafe reading log.
+        </p>
+      </div>
+
+      {/* Member Card */}
+      <div className="px-lg pt-lg flex-shrink-0 bg-[var(--color-parchment)]">
         <div
           className="rounded-lg border-2 border-[var(--color-border-dark)] overflow-hidden"
           style={{ boxShadow: '0 3.5px 0px var(--color-border-dark)' }}
@@ -370,7 +375,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
       </div>
 
       {/* Tabs Header */}
-      <div className="flex border-b-2 border-[var(--color-border-dark)] bg-[var(--color-cream)] flex-shrink-0 font-sans text-xs select-none">
+      <div className="flex border-b-2 border-[var(--color-border-dark)] bg-[var(--color-cream)] flex-shrink-0 font-sans text-xs select-none mt-4">
         <button
           onClick={() => setActiveTab('goals')}
           className={`flex-1 text-center py-3 font-bold cursor-pointer transition-all duration-150 ${
@@ -406,7 +411,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
       </div>
 
       {/* Tab Contents */}
-      <div className="flex-1 overflow-y-auto p-5 bg-[var(--color-parchment)]">{renderTabContent()}</div>
+      <div className="flex-1 overflow-y-auto p-lg bg-[var(--color-parchment)]">{renderTabContent()}</div>
     </div>
   );
 };
