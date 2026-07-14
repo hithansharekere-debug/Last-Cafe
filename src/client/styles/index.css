@@ -1,40 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300..900;1,300..900&family=Quicksand:wght@300..700&family=Fredoka:wght@300..700&display=swap');
+
 /* Core Design System for The Last Cafe on the Internet */
 
 :root {
-  /* Cozy Color System */
-  --color-parchment: #fdfaf2;
-  --color-paper: #f7edd7;
-  --color-paper-shadow: #e2d2b5;
-  --color-wood-light: #8e5a36;
-  --color-wood-medium: #5c371d;
-  --color-wood-dark: #371e0c;
-  --color-coffee-espresso: #211107;
-  --color-coffee-latte: #c8a285;
-  --color-coffee-foam: #eeded1;
-  --color-accent-amber: #cf7929;
-  --color-accent-gold: #d4af37;
-  --color-accent-copper: #9b4618;
-  --color-accent-sage: #4a7c59;
-  --color-accent-lavender: #9c27b0;
+  /* Cozy Color System - Cozy Indie Game Palette */
+  --color-parchment: #F4E8D5;
+  --color-cream: #FBF6EE;
+  --color-paper: #F4E8D5;
+  --color-paper-shadow: #D9C3A5;
+  --color-wood-light: #8D6846;
+  --color-wood-medium: #4B3528;
+  --color-wood-dark: #3B271C;
+  --color-coffee-espresso: #3B271C;
+  --color-coffee-latte: #C6965A;
+  --color-coffee-foam: #FBF6EE;
+  --color-accent-amber: #C6965A;
+  --color-accent-gold: #D9A441;
+  --color-accent-copper: #C97464;
+  --color-accent-sage: #98A27A;
+  --color-accent-lavender: #AEB48D;
+  --color-accent-warm-red: #C97464;
   
-  --color-border-dark: #2c160a;
-  --color-text-dark: #26140b;
-  --color-text-light: #fdfaf2;
-  --color-text-muted: #5e463a;
+  --color-border-dark: #3B271C;
+  --color-text-dark: #4B3528;
+  --color-text-light: #FBF6EE;
+  --color-text-muted: #8D6846;
 
-  /* Typography Stacks (No CDNs) */
+  /* Typography Stacks (With Fallback for CSP/Sandboxing Safety) */
   --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
   --font-handwritten: "Segoe Print", "Bradley Hand", "Comic Sans MS", "Caveat", cursive;
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "Quicksand", "Nunito", "Segoe UI Rounded", "Fredoka", "Comic Sans MS", system-ui, -apple-system, sans-serif;
   --font-mono: "Courier New", Courier, monospace;
 
-  /* Borders & Shadows */
+  /* Borders & Shadows - Physical Indie Game Style */
   --border-width: 2px;
   --border-style: solid;
   --border-vintage: var(--border-width) var(--border-style) var(--color-border-dark);
-  --shadow-handdrawn: 4px 4px 0px var(--color-border-dark);
-  --shadow-soft: 0 4px 15px rgba(38, 20, 11, 0.12);
-  --shadow-warm-glow: 0 0 12px rgba(207, 121, 41, 0.4);
+  --shadow-handdrawn: 0 4px 0px var(--color-border-dark);
+  --shadow-soft: 0 4px 12px rgba(59, 39, 28, 0.15);
+  --shadow-warm-glow: 0 0 12px rgba(198, 150, 90, 0.35);
   
   /* Layout constraints */
   --app-max-width: 480px;
@@ -465,4 +469,355 @@ input, textarea, select {
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
+
+/* --- Missing Utility Classes for Form, Button, and Modal --- */
+
+/* Width and Height */
+.h-11 {
+  height: 44px;
+}
+.min-h-\[100px\] {
+  min-height: 100px;
+}
+.min-h-\[140px\] {
+  min-height: 140px;
+}
+
+/* Borders and Corners */
+.border-2 {
+  border-width: 2px;
+  border-style: solid;
+}
+.rounded-md {
+  border-radius: 0.375rem;
+}
+.border-\[\#2c160a\] {
+  border-color: #2c160a;
+}
+.border-\[\#c8a285\] {
+  border-color: #c8a285;
+}
+
+/* Background Colors */
+.bg-\[\#fdfaf2\] {
+  background-color: #fdfaf2;
+}
+.bg-\[\#eeded1\] {
+  background-color: #eeded1;
+}
+.bg-\[\#cf7929\] {
+  background-color: #cf7929;
+}
+.bg-\[\#5c371d\] {
+  background-color: #5c371d;
+}
+
+/* Text Colors */
+.text-\[\#2c160a\] {
+  color: #2c160a;
+}
+.text-\[\#eeded1\] {
+  color: #eeded1;
+}
+.text-\[\#fdfaf2\] {
+  color: #fdfaf2;
+}
+.text-\[\#cf7929\] {
+  color: #cf7929;
+}
+
+/* Margins and Padding */
+.py-2 {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+.py-2\.5 {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+.py-3\.5 {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.px-2 {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.px-3 {
+  padding-left: 12px;
+  padding-right: 12px;
+}
+.px-4 {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+.px-5\.5 {
+  padding-left: 22px;
+  padding-right: 22px;
+}
+.px-7 {
+  padding-left: 28px;
+  padding-right: 28px;
+}
+.py-0\.5 {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+.py-16 {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+.ml-1 {
+  margin-left: 4px;
+}
+
+/* Flexbox and Layout */
+.flex-\[2\] {
+  flex: 2 2 0%;
+}
+.resize-y {
+  resize: vertical;
+}
+.select-none {
+  user-select: none;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Hover and Active states */
+.hover\:scale-\[1\.01\]:hover {
+  transform: scale(1.01);
+}
+.hover\:bg-\[\#b05c14\]:hover {
+  background-color: #b05c14;
+}
+.hover\:bg-\[\#e2cbba\]:hover {
+  background-color: #e2cbba;
+}
+.hover\:bg-\[\#3d200e\]:hover {
+  background-color: #3d200e;
+}
+.hover\:bg-\[\#f7edd7\]\/50:hover {
+  background-color: rgba(247, 237, 215, 0.5);
+}
+
+.active\:translate-y-\[2px\]:active {
+  transform: translateY(2px);
+}
+.active\:translate-x-\[2px\]:active {
+  transform: translateX(2px);
+}
+.active\:shadow-none:active {
+  box-shadow: none;
+}
+
+/* Focus states */
+.focus\:outline-none:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+.focus\:border-\[\#cf7929\]:focus {
+  border-color: #cf7929;
+}
+.focus\:ring-2:focus {
+  box-shadow: 0 0 0 2px #cf7929;
+}
+
+/* Button & Form defaults */
+.shadow-\[3px_3px_0px_\#2c160a\] {
+  box-shadow: 3px 3px 0px #2c160a;
+}
+.shadow-\[2px_2px_0px_\#2c160a\] {
+  box-shadow: 2px 2px 0px #2c160a;
+}
+
+/* Font styles */
+.font-bold {
+  font-weight: 700;
+}
+.text-xs {
+  font-size: 0.75rem;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.text-base {
+  font-size: 1rem;
+}
+.text-6xl {
+  font-size: 3.75rem;
+}
+.leading-relaxed {
+  line-height: 1.625;
+}
+.italic {
+  font-style: italic;
+}
+.lowercase {
+  text-transform: lowercase;
+}
+.tracking-wider {
+  letter-spacing: 0.05em;
+}
+.tracking-wide {
+  letter-spacing: 0.025em;
+}
+
+/* Responsive Modal Styling overrides */
+.modal-panel-responsive {
+  max-height: 90vh;
+}
+@media (min-width: 640px) {
+  .modal-panel-responsive {
+    max-height: 80vh;
+  }
+}
+
+.modal-body-responsive {
+  padding: 16px;
+}
+@media (min-width: 640px) {
+  .modal-body-responsive {
+    padding: 24px;
+  }
+}
+
+.modal-footer-responsive {
+  padding: 12px 16px;
+}
+@media (min-width: 640px) {
+  .modal-footer-responsive {
+    padding: 16px 24px;
+  }
+}
+
+/* Difficulty & Action Buttons single-column layout on mobile */
+.difficulty-buttons {
+  flex-direction: column;
+}
+@media (min-width: 640px) {
+  .difficulty-buttons {
+    flex-direction: row;
+  }
+}
+
+.modal-footer-buttons {
+  flex-direction: column;
+}
+@media (min-width: 640px) {
+  .modal-footer-buttons {
+    flex-direction: row;
+  }
+}
+
+/* --- Cozy Game Aesthetics & Physical Controls --- */
+
+/* Rounded overrides for cozy game feel */
+.rounded-md {
+  border-radius: 12px !important;
+}
+.rounded-lg {
+  border-radius: 16px !important;
+}
+.rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* Cozy inputs, textareas, selects */
+input, textarea, select {
+  background-color: var(--color-cream) !important;
+  border: 2px solid var(--color-dark-walnut) !important;
+  color: var(--color-espresso) !important;
+  font-family: var(--font-sans) !important;
+  box-shadow: inset 0 2px 4px rgba(59, 39, 28, 0.08) !important;
+  padding: 10px 14px !important;
+  outline: none !important;
+  transition: all 0.2s ease !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--color-caramel) !important;
+  box-shadow: inset 0 2px 4px rgba(59, 39, 28, 0.08), 0 0 0 3px rgba(198, 150, 90, 0.25) !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #8D6846 !important;
+  opacity: 0.6;
+}
+
+/* Physical game buttons overrides */
+button, .button-cozy {
+  font-family: var(--font-sans) !important;
+  font-weight: 700 !important;
+  border: 2px solid var(--color-dark-walnut) !important;
+  border-radius: 12px !important;
+  transition: all 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.25) !important;
+}
+
+/* Physical button active presses (3D push down) */
+button:active:not(:disabled), .button-cozy:active:not(:disabled) {
+  transform: translateY(3px) !important;
+  box-shadow: 0 1px 0px var(--color-dark-walnut) !important;
+}
+
+/* Tactile button heights and borders */
+.h-11 {
+  height: 46px !important;
+}
+
+/* Core buttons variants with soft gradients */
+.bg-\[\#cf7929\] {
+  background: linear-gradient(to bottom, #D9A441, #C6965A) !important;
+  color: #FBF6EE !important;
+  box-shadow: 0 4px 0px var(--color-dark-walnut) !important;
+  text-shadow: 0 1px 0px rgba(0, 0, 0, 0.15);
+}
+.bg-\[\#cf7929\]:hover:not(:disabled) {
+  background: linear-gradient(to bottom, #E8B653, #D9A441) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0px var(--color-dark-walnut) !important;
+}
+
+.bg-\[\#eeded1\] {
+  background: linear-gradient(to bottom, #FBF6EE, #F4E8D5) !important;
+  color: #4B3528 !important;
+  box-shadow: 0 4px 0px var(--color-dark-walnut) !important;
+}
+.bg-\[\#eeded1\]:hover:not(:disabled) {
+  background: linear-gradient(to bottom, #FFFFFF, #FBF6EE) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0px var(--color-dark-walnut) !important;
+}
+
+.bg-\[\#5c371d\] {
+  background: linear-gradient(to bottom, #8D6846, #4B3528) !important;
+  color: #FBF6EE !important;
+  box-shadow: 0 4px 0px var(--color-dark-walnut) !important;
+  text-shadow: 0 1px 0px rgba(0, 0, 0, 0.3);
+}
+.bg-\[\#5c371d\]:hover:not(:disabled) {
+  background: linear-gradient(to bottom, #A17C5B, #8D6846) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0px var(--color-dark-walnut) !important;
+}
+
+/* Clear shadow defaults to avoid flat look */
+.shadow-\[3px_3px_0px_\#2c160a\],
+.shadow-\[4px_4px_0px_\#2c160a\],
+.shadow-\[6px_6px_0px_\#2c160a\] {
+  box-shadow: 0 5px 0px var(--color-dark-walnut) !important;
+}
+
+/* Layout spacing refinements */
+.p-lg {
+  padding: 20px !important;
+}
+@media (min-width: 640px) {
+  .p-lg {
+    padding: 24px !important;
+  }
+}
+
+
 

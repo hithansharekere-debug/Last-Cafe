@@ -30,18 +30,18 @@ export const CommunityTableScreen = ({
   }, [onFetchPuzzles]);
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header */}
       <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
         style={{
-          backgroundColor: '#f7edd7',
+          backgroundColor: 'var(--color-cream)',
           backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
       >
-        <h2 className="font-serif font-bold text-base text-[#2c160a] leading-tight">🪑 The Community Table</h2>
-        <p className="font-serif text-xs text-[#5e463a] italic mt-1 leading-relaxed">
+        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] leading-tight">🪑 The Community Table</h2>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic mt-1 leading-relaxed">
           Cozy mysteries left behind by other visitors. Solve them to gain reputation.
         </p>
       </div>

@@ -135,12 +135,12 @@ export const PuzzleCreatorModal = ({
         </ModalBody>
       ) : (
         <>
-          <ModalBody className="flex flex-col gap-lg">
+          <ModalBody className="flex flex-col gap-md">
             <p className="text-xs text-[#5e463a] italic leading-relaxed select-none">
               Leave tomorrow's visitors a cozy puzzle to solve. Fill in the fields below.
             </p>
 
-            <div className="flex flex-col gap-lg">
+            <div className="flex flex-col gap-md">
               {/* 1. Puzzle Type */}
               <div className="flex flex-col">
                 <Label htmlFor="puzzle-type-select">Puzzle Type</Label>
@@ -173,10 +173,15 @@ export const PuzzleCreatorModal = ({
               </div>
 
               {/* 3. Description */}
-              <div className="flex flex-col relative">
-                <Label htmlFor="puzzle-desc-input">
-                  Cozy Setup Narrative <span className="text-[10px] text-[#5e463a] italic lowercase font-normal">(Optional)</span>
-                </Label>
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-2">
+                  <Label htmlFor="puzzle-desc-input" style={{ marginBottom: 0 }}>
+                    Cozy Setup Narrative <span className="text-[10px] text-[#5e463a] italic lowercase font-normal">(Optional)</span>
+                  </Label>
+                  <span className="font-mono text-[10px] text-[#5e463a]/60 font-bold select-none">
+                    {description.length}/200
+                  </span>
+                </div>
                 <Textarea
                   id="puzzle-desc-input"
                   value={description}
@@ -185,16 +190,18 @@ export const PuzzleCreatorModal = ({
                   maxLength={200}
                   className="min-h-[100px]"
                 />
-                <span className="absolute bottom-2 right-2 font-mono text-[9px] text-[#5e463a]/60 font-bold select-none">
-                  {description.length}/200
-                </span>
               </div>
 
               {/* 4. Clue Text */}
-              <div className="flex flex-col relative">
-                <Label htmlFor="puzzle-text-input">
-                  Puzzle Clue / Clutter text <span className="text-[#cf7929] font-bold">*</span>
-                </Label>
+              <div className="flex flex-col">
+                <div className="flex justify-between items-center mb-2">
+                  <Label htmlFor="puzzle-text-input" style={{ marginBottom: 0 }}>
+                    Puzzle Clue / Clutter text <span className="text-[#cf7929] font-bold">*</span>
+                  </Label>
+                  <span className="font-mono text-[10px] text-[#5e463a]/60 font-bold select-none">
+                    {puzzleText.length}/500
+                  </span>
+                </div>
                 <Textarea
                   id="puzzle-text-input"
                   value={puzzleText}
@@ -202,9 +209,6 @@ export const PuzzleCreatorModal = ({
                   placeholder={getTemplatePlaceholder()}
                   maxLength={500}
                 />
-                <span className="absolute bottom-2 right-2 font-mono text-[9px] text-[#5e463a]/60 font-bold select-none">
-                  {puzzleText.length}/500
-                </span>
               </div>
 
               {/* 5. Hint */}
@@ -238,7 +242,7 @@ export const PuzzleCreatorModal = ({
               {/* 7. Difficulty Selector */}
               <div className="flex flex-col">
                 <Label>Select Difficulty</Label>
-                <div className="flex gap-md w-full">
+                <div className="difficulty-buttons flex gap-md w-full">
                   {(['Easy', 'Medium', 'Hard'] as const).map((diff) => {
                     const active = difficulty === diff;
                     return (
@@ -264,7 +268,7 @@ export const PuzzleCreatorModal = ({
           {/* FIXED FOOTER */}
           <ModalFooter className="flex-col gap-md">
             {/* Coffee cost card */}
-            <div className="w-full py-2.5 px-md bg-[#eeded1] border-2 border-[#c8a285] rounded-md flex items-center justify-center gap-sm font-serif text-xs text-[#2c160a] font-bold">
+            <div className="w-full py-2 px-md bg-[#eeded1] border-2 border-[#c8a285] rounded-md flex flex-wrap items-center justify-center gap-sm font-serif text-xs text-[#2c160a] font-bold text-center">
               <span>☕</span>
               <span>Publishing this mystery costs 1 Coffee Token.</span>
               <span className="font-mono text-[10px] bg-[#cf7929] text-[#fdfaf2] px-2 py-0.5 rounded-md font-bold ml-1">
@@ -278,7 +282,7 @@ export const PuzzleCreatorModal = ({
               </p>
             )}
 
-            <div className="flex gap-md w-full">
+            <div className="modal-footer-buttons flex gap-md w-full">
               <Button
                 variant="outline"
                 size="md"

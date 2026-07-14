@@ -42,7 +42,7 @@ export const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalPr
     >
       {/* Modal panel with wooden/parchment board aesthetic */}
       <div
-        className={`relative ${widthClass} max-h-[80vh] flex flex-col rounded-md border-2 border-[#2c160a] overflow-hidden shadow-[6px_6px_0px_#2c160a] bg-[#fdfaf2] animate-slide-in-up`}
+        className={`relative ${widthClass} modal-panel-responsive flex flex-col rounded-md border-2 border-[#2c160a] overflow-hidden shadow-[6px_6px_0px_#2c160a] bg-[#fdfaf2] animate-slide-in-up`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Fixed Wooden header bar */}
@@ -84,7 +84,7 @@ export const ModalHeader = ({ children, className = '' }: { children: ReactNode;
 
 export const ModalBody = ({ children, className = '' }: { children: ReactNode; className?: string }) => {
   return (
-    <div className={`p-lg overflow-y-auto flex-1 font-serif text-[#26140b] ${className}`}>
+    <div className={`modal-body-responsive overflow-y-auto flex-1 font-serif text-[#26140b] ${className}`}>
       {children}
     </div>
   );
@@ -92,7 +92,7 @@ export const ModalBody = ({ children, className = '' }: { children: ReactNode; c
 
 export const ModalFooter = ({ children, className = '' }: { children: ReactNode; className?: string }) => {
   return (
-    <div className={`px-lg py-md border-t border-[#2c160a]/10 bg-[#eeded1]/30 flex justify-end gap-md shrink-0 ${className}`}>
+    <div className={`modal-footer-responsive border-t border-[#2c160a]/10 bg-[#eeded1]/30 flex justify-end gap-md shrink-0 ${className}`}>
       {children}
     </div>
   );

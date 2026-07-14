@@ -30,12 +30,12 @@ export const WelcomeScreen = () => {
   ];
 
   return (
-    <div className="flex flex-col w-full h-full overflow-y-auto bg-[#fdfaf2] animate-fade-in">
+    <div className="flex flex-col w-full h-full overflow-y-auto bg-[var(--color-parchment)] animate-fade-in">
       {/* Hero section */}
       <div
-        className="flex flex-col items-center justify-center py-10 px-6 text-center border-b-2 border-[#2c160a]"
+        className="flex flex-col items-center justify-center py-10 px-6 text-center border-b-2 border-[var(--color-border-dark)]"
         style={{
-          backgroundColor: '#f7edd7',
+          backgroundColor: 'var(--color-cream)',
           backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
@@ -48,11 +48,11 @@ export const WelcomeScreen = () => {
           <span className="text-6xl animate-float">☕</span>
         </div>
         
-        <h1 className="font-serif font-bold text-2xl text-[#2c160a] leading-tight mb-2 tracking-wide">
+        <h1 className="font-sans font-bold text-2xl text-[var(--color-dark-walnut)] leading-tight mb-2 tracking-wide" style={{ fontSize: 'clamp(26px, 4.5vw, 32px)' }}>
           The Last Cafe<br />on the Internet
         </h1>
         
-        <p className="font-serif text-xs text-[#5e463a] italic leading-relaxed max-w-xs mb-6">
+        <p className="font-sans text-sm text-[var(--color-espresso)] italic leading-relaxed max-w-xs mb-6">
           A quiet corner of Reddit where strangers leave something real for one another.
           Pull up a chair. Stay a while.
         </p>
@@ -64,7 +64,7 @@ export const WelcomeScreen = () => {
 
       {/* Rules section */}
       <div className="flex flex-col gap-4 p-5">
-        <h2 className="font-serif font-bold text-sm text-[#2c160a] px-1 flex items-center gap-2">
+        <h2 className="font-sans font-bold text-sm text-[var(--color-dark-walnut)] px-1 flex items-center gap-2">
           <span>📋</span> How the Cafe Works
         </h2>
         
@@ -74,8 +74,8 @@ export const WelcomeScreen = () => {
               <div className="flex gap-4 items-start">
                 <span className="text-3xl flex-shrink-0 mt-0.5 select-none">{rule.icon}</span>
                 <div className="flex flex-col gap-1">
-                  <span className="font-serif font-bold text-sm text-[#26140b]">{rule.title}</span>
-                  <span className="font-serif text-xs text-[#5e463a] leading-relaxed">{rule.text}</span>
+                  <span className="font-sans font-bold text-sm text-[var(--color-dark-walnut)]">{rule.title}</span>
+                  <span className="font-sans text-xs text-[var(--color-espresso)] leading-relaxed">{rule.text}</span>
                 </div>
               </div>
             </Card>
@@ -85,13 +85,13 @@ export const WelcomeScreen = () => {
 
       {/* Blackboard Category teaser */}
       <div
-        className="mx-5 mb-5 mt-1 rounded-lg border-2 border-[#2c160a] p-5 shadow-[4px_4px_0px_#2c160a]"
+        className="mx-5 mb-5 mt-1 rounded-lg border-2 border-[var(--color-border-dark)] p-5 shadow-[4px_4px_0px_var(--color-border-dark)]"
         style={{
-          backgroundColor: '#eeded1',
-          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(44,22,10,0.03) 10px, rgba(44,22,10,0.03) 20px)',
+          backgroundColor: 'var(--color-parchment)',
+          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(59,39,28,0.03) 10px, rgba(59,39,28,0.03) 20px)',
         }}
       >
-        <p className="font-serif text-[10px] text-[#5e463a] font-bold uppercase tracking-widest mb-3 select-none">
+        <p className="font-sans text-[11px] text-[var(--color-dark-walnut)] font-bold uppercase tracking-widest mb-3 select-none">
           🍰 You can write & read…
         </p>
         <div className="flex flex-wrap gap-2">
@@ -107,7 +107,7 @@ export const WelcomeScreen = () => {
           ].map(({ tag, emoji }) => (
             <span
               key={tag}
-              className="px-2.5 py-1 text-xs font-serif rounded border border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] font-bold shadow-[1.5px_1.5px_0px_#2c160a] select-none"
+              className="px-2.5 py-1 text-xs font-sans rounded border border-[var(--color-border-dark)] bg-[var(--color-cream)] text-[var(--color-dark-walnut)] font-bold shadow-[1.5px_1.5px_0px_var(--color-border-dark)] select-none"
             >
               {emoji} {tag}
             </span>
@@ -119,7 +119,7 @@ export const WelcomeScreen = () => {
       <div className="px-5 pb-8 text-center">
         <button
           onClick={() => navigateTo('discover')}
-          className="font-serif text-xs text-[#5e463a] italic underline underline-offset-2 hover:text-[#cf7929] transition-colors cursor-pointer"
+          className="font-sans text-xs text-[var(--color-espresso)] italic underline underline-offset-2 hover:text-[var(--color-caramel)] transition-colors cursor-pointer"
         >
           Read what others have left →
         </button>

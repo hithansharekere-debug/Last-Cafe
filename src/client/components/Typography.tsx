@@ -9,9 +9,9 @@ interface TypographyProps {
 export const PageTitle = ({ children, className = '', style }: TypographyProps) => {
   return (
     <h1
-      className={`font-serif font-bold text-[#2c160a] leading-tight tracking-wide ${className}`}
+      className={`font-sans font-bold text-[var(--color-dark-walnut)] leading-tight tracking-wide ${className}`}
       style={{
-        fontSize: 'clamp(1.4rem, 4vw, 2rem)',
+        fontSize: 'clamp(30px, 5vw, 34px)',
         ...style
       }}
     >
@@ -23,9 +23,9 @@ export const PageTitle = ({ children, className = '', style }: TypographyProps) 
 export const SectionTitle = ({ children, className = '', style }: TypographyProps) => {
   return (
     <h2
-      className={`font-serif font-bold text-[#2c160a] leading-normal tracking-wide ${className}`}
+      className={`font-sans font-bold text-[var(--color-dark-walnut)] leading-normal tracking-wide ${className}`}
       style={{
-        fontSize: 'clamp(1.1rem, 3vw, 1.4rem)',
+        fontSize: 'clamp(22px, 3.5vw, 24px)',
         ...style
       }}
     >
@@ -37,9 +37,9 @@ export const SectionTitle = ({ children, className = '', style }: TypographyProp
 export const CardTitle = ({ children, className = '', style }: TypographyProps) => {
   return (
     <h3
-      className={`font-serif font-bold text-[#2c160a] leading-snug ${className}`}
+      className={`font-sans font-bold text-[var(--color-dark-walnut)] leading-snug ${className}`}
       style={{
-        fontSize: '1.1rem',
+        fontSize: '18px',
         ...style
       }}
     >
@@ -51,9 +51,9 @@ export const CardTitle = ({ children, className = '', style }: TypographyProps) 
 export const BodyText = ({ children, className = '', style }: TypographyProps) => {
   return (
     <p
-      className={`font-serif text-[#5e463a] leading-relaxed ${className}`}
+      className={`font-sans text-[var(--color-espresso)] leading-relaxed ${className}`}
       style={{
-        fontSize: '0.95rem',
+        fontSize: '16px',
         maxWidth: '65ch',
         ...style
       }}
@@ -66,9 +66,9 @@ export const BodyText = ({ children, className = '', style }: TypographyProps) =
 export const Caption = ({ children, className = '', style }: TypographyProps) => {
   return (
     <span
-      className={`font-serif text-[#8a6e5f] leading-normal ${className}`}
+      className={`font-sans text-[var(--color-bronze)] leading-normal ${className}`}
       style={{
-        fontSize: '0.85rem',
+        fontSize: '14px',
         ...style
       }}
     >
@@ -76,3 +76,4 @@ export const Caption = ({ children, className = '', style }: TypographyProps) =>
     </span>
   );
 };
+

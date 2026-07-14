@@ -43,9 +43,9 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
 
   if (!user) {
     return (
-      <div className="flex flex-col items-center justify-center w-full h-full p-6 bg-[#fdfaf2] gap-4">
+      <div className="flex flex-col items-center justify-center w-full h-full p-6 bg-[var(--color-parchment)] gap-4">
         <span className="text-4xl animate-float">📋</span>
-        <p className="font-serif text-sm text-[#5e463a] italic text-center">
+        <p className="font-sans text-sm text-[var(--color-espresso)] italic text-center">
           Sign in to Reddit to view your Library Card.
         </p>
       </div>
@@ -71,28 +71,28 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
             <Card
               variant="parchment"
               elevation="low"
-              className="p-4 border-2 border-[#2c160a] bg-[#fdfaf2] flex flex-col gap-2 shadow-[2px_2px_0px_#2c160a]"
+              className="p-4 border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] flex flex-col gap-2 shadow-[0_3px_0px_var(--color-border-dark)]"
             >
-              <div className="flex items-center justify-between border-b border-dashed border-[#c8a285] pb-2">
-                <span className="font-serif font-bold text-sm text-[#2c160a] flex items-center gap-1.5 select-none">
+              <div className="flex items-center justify-between border-b border-dashed border-[var(--color-bronze)] pb-2">
+                <span className="font-sans font-bold text-sm text-[var(--color-dark-walnut)] flex items-center gap-1.5 select-none">
                   🔥 Visit Streak
                 </span>
-                <span className="font-mono text-xs bg-[#cf7929] text-[#fdfaf2] px-2.5 py-0.5 rounded font-bold">
+                <span className="font-mono text-xs bg-[var(--color-caramel)] text-[var(--color-text-light)] px-2.5 py-0.5 rounded font-bold">
                   {user.currentStreak || 1} Days
                 </span>
               </div>
-              <p className="font-serif text-xs text-[#5e463a] leading-relaxed">
-                Visit the cafe daily to keep your streak alive! Longest streak: <strong className="text-[#2c160a]">{user.longestStreak || 1} days</strong>.
+              <p className="font-sans text-xs text-[var(--color-espresso)] leading-relaxed">
+                Visit the cafe daily to keep your streak alive! Longest streak: <strong className="text-[var(--color-dark-walnut)]">{user.longestStreak || 1} days</strong>.
               </p>
             </Card>
 
             {/* Daily Goals */}
             <div className="flex flex-col gap-2.5 mt-2">
-              <h3 className="font-serif font-bold text-xs text-[#2c160a] uppercase tracking-wider px-1">
+              <h3 className="font-sans font-bold text-xs text-[var(--color-dark-walnut)] uppercase tracking-wider px-1">
                 🎯 Today's Cozy Goals
               </h3>
               {dailyObjectives.length === 0 ? (
-                <p className="font-serif text-xs text-[#5e463a] italic text-center py-4 bg-[#eeded1]/10 border border-dashed border-[#c8a285] rounded-lg">
+                <p className="font-sans text-xs text-[var(--color-espresso)] italic text-center py-4 bg-[var(--color-cream)]/30 border border-dashed border-[var(--color-bronze)] rounded-lg">
                   No active goals today.
                 </p>
               ) : (
@@ -102,28 +102,28 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
                     return (
                       <div
                         key={obj.id}
-                        className={`flex items-center justify-between p-3.5 rounded-lg border-2 border-[#2c160a] transition-all ${
-                          isDone ? 'bg-[#e1ead4] opacity-85' : 'bg-[#fdfaf2]'
+                        className={`flex items-center justify-between p-3.5 rounded-lg border-2 border-[var(--color-border-dark)] transition-all ${
+                          isDone ? 'bg-[var(--color-cream)] opacity-85' : 'bg-[var(--color-parchment)]'
                         }`}
-                        style={{ boxShadow: '3px 3px 0px #2c160a' }}
+                        style={{ boxShadow: '0 3px 0px var(--color-border-dark)' }}
                       >
                         <div className="flex items-center gap-3">
                           <span className="text-2xl select-none">{isDone ? '✅' : '📝'}</span>
                           <div>
                             <p
-                              className={`font-serif text-xs font-bold text-[#2c160a] ${
+                              className={`font-sans text-xs font-bold text-[var(--color-dark-walnut)] ${
                                 isDone ? 'line-through opacity-60' : ''
                               }`}
                             >
                               {obj.text}
                             </p>
-                            <p className="font-mono text-[9px] text-[#cf7929] uppercase tracking-wider font-bold mt-0.5">
+                            <p className="font-mono text-[9px] text-[var(--color-caramel)] uppercase tracking-wider font-bold mt-0.5">
                               Reward: +{obj.rewardValue} {obj.rewardType === 'token' ? 'Coffee Token ☕' : 'Warmth 🔥'}
                             </p>
                           </div>
                         </div>
                         {isDone && (
-                          <span className="font-mono text-[9px] uppercase tracking-widest text-[#4a7c59] font-bold">
+                          <span className="font-mono text-[9px] uppercase tracking-widest text-[var(--color-sage)] font-bold">
                             Done
                           </span>
                         )}
@@ -149,14 +149,14 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
                   <button
                     key={key}
                     onClick={() => setSelectedAchievement(key)}
-                    className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 border-[#2c160a] cursor-pointer transition-all duration-200 relative ${
+                    className={`flex flex-col items-center justify-center p-3 rounded-lg border-2 border-[var(--color-border-dark)] cursor-pointer transition-all duration-200 relative ${
                       isUnlocked
-                        ? 'bg-[#eeded1] badge-glow-unlocked shadow-[2.5px_2.5px_0px_#2c160a] hover:scale-[1.03]'
-                        : 'bg-[#c8a285]/10 opacity-40 scale-95 border-dashed hover:opacity-50'
-                    } ${isSelected ? 'ring-2 ring-[#cf7929]' : ''}`}
+                        ? 'bg-[var(--color-cream)] badge-glow-unlocked shadow-[0_3px_0px_var(--color-border-dark)] hover:scale-[1.03]'
+                        : 'bg-[var(--color-cream)]/30 opacity-40 scale-95 border-dashed hover:opacity-50'
+                    } ${isSelected ? 'ring-2 ring-[var(--color-caramel)]' : ''}`}
                   >
                     <span className="text-3xl mb-1 select-none">{ach.icon}</span>
-                    <span className="font-serif text-[9px] text-[#2c160a] text-center leading-tight font-bold">
+                    <span className="font-sans text-[9px] text-[var(--color-dark-walnut)] text-center leading-tight font-bold">
                       {ach.title}
                     </span>
                     {isUnlocked && (
@@ -176,24 +176,24 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
                 <Card
                   variant="napkin"
                   elevation="low"
-                  className="p-4 border-2 border-[#2c160a] flex flex-col gap-2"
+                  className="p-4 border-2 border-[var(--color-border-dark)] flex flex-col gap-2"
                 >
-                  <div className="flex items-center justify-between border-b border-dashed border-[#c8a285] pb-2 mb-1">
-                    <span className="font-serif font-bold text-xs text-[#2c160a] flex items-center gap-1.5">
+                  <div className="flex items-center justify-between border-b border-dashed border-[var(--color-bronze)] pb-2 mb-1">
+                    <span className="font-sans font-bold text-xs text-[var(--color-dark-walnut)] flex items-center gap-1.5">
                       <span className="select-none text-base">{selectedAch.icon}</span>
                       <span>{selectedAch.title}</span>
                     </span>
                     <span
                       className={`font-mono text-[9px] font-bold px-2 py-0.5 rounded border-2 uppercase tracking-wider ${
                         isUnlocked
-                          ? 'bg-[#e1ead4] text-[#4a7c59] border-[#4a7c59] shadow-[1.5px_1.5px_0px_#4a7c59]'
-                          : 'bg-[#c8a285]/10 text-[#5e463a] border-[#2c160a] border-dashed'
+                          ? 'bg-[var(--color-cream)] text-[var(--color-sage)] border-[var(--color-sage)] shadow-[0_2px_0px_var(--color-sage)]'
+                          : 'bg-[var(--color-cream)]/30 text-[var(--color-espresso)] border-[var(--color-border-dark)] border-dashed'
                       }`}
                     >
                       {isUnlocked ? 'Unlocked' : 'Locked'}
                     </span>
                   </div>
-                  <p className="font-serif text-xs text-[#5e463a] leading-relaxed">
+                  <p className="font-sans text-xs text-[var(--color-espresso)] leading-relaxed">
                     {selectedAch.description}
                   </p>
                 </Card>
@@ -216,7 +216,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
                 {user.timeline.slice(0, 20).map((item) => (
                   <div
                     key={item.id}
-                    className="flex gap-3 items-start border-l-2 border-[#c8a285] pl-3.5 py-1.5 ml-2 hover:bg-[#eeded1]/20 rounded-r-md pr-2 transition-all duration-150"
+                    className="flex gap-3 items-start border-l-2 border-[var(--color-bronze)] pl-3.5 py-1.5 ml-2 hover:bg-[var(--color-cream)]/20 rounded-r-md pr-2 transition-all duration-150"
                   >
                     <span className="text-lg select-none mt-0.5">
                       {item.type === 'claim_coffee'
@@ -230,8 +230,8 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
                         : '❤️'}
                     </span>
                     <div className="flex-1">
-                      <p className="font-serif text-xs text-[#2c160a] leading-relaxed">{item.title}</p>
-                      <p className="font-mono text-[9px] text-[#5e463a] mt-1 font-bold">
+                      <p className="font-sans text-xs text-[var(--color-dark-walnut)] leading-relaxed">{item.title}</p>
+                      <p className="font-mono text-[9px] text-[var(--color-espresso)] mt-1 font-bold">
                         {formatRelativeTime(item.timestamp)}
                       </p>
                     </div>
@@ -250,13 +250,13 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
               <Card
                 variant="parchment"
                 elevation="low"
-                className="flex flex-col items-center p-4 text-center border-2 border-[#2c160a] bg-[#fdfaf2] hover:scale-[1.01]"
+                className="flex flex-col items-center p-4 text-center border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] hover:scale-[1.01]"
               >
                 <span className="text-3xl mb-1.5 select-none">🏆</span>
-                <span className="font-serif font-bold text-base text-[#2c160a]">
+                <span className="font-sans font-bold text-base text-[var(--color-dark-walnut)]">
                   {reputation}
                 </span>
-                <span className="font-serif text-[9px] text-[#5e463a] uppercase tracking-wider font-bold">
+                <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">
                   Reputation
                 </span>
               </Card>
@@ -264,13 +264,13 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
               <Card
                 variant="parchment"
                 elevation="low"
-                className="flex flex-col items-center p-4 text-center border-2 border-[#2c160a] bg-[#fdfaf2] hover:scale-[1.01]"
+                className="flex flex-col items-center p-4 text-center border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] hover:scale-[1.01]"
               >
                 <span className="text-3xl mb-1.5 select-none">💡</span>
-                <span className="font-serif font-bold text-base text-[#2c160a]">
+                <span className="font-sans font-bold text-base text-[var(--color-dark-walnut)]">
                   {user.solvedPuzzles?.length || 0}
                 </span>
-                <span className="font-serif text-[9px] text-[#5e463a] uppercase tracking-wider font-bold">
+                <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">
                   Puzzles Solved
                 </span>
               </Card>
@@ -278,13 +278,13 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
               <Card
                 variant="parchment"
                 elevation="low"
-                className="flex flex-col items-center p-4 text-center border-2 border-[#2c160a] bg-[#fdfaf2] hover:scale-[1.01]"
+                className="flex flex-col items-center p-4 text-center border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] hover:scale-[1.01]"
               >
                 <span className="text-3xl mb-1.5 select-none">☕</span>
-                <span className="font-serif font-bold text-base text-[#2c160a]">
+                <span className="font-sans font-bold text-base text-[var(--color-dark-walnut)]">
                   {user.currentCoffeeTokens}
                 </span>
-                <span className="font-serif text-[9px] text-[#5e463a] uppercase tracking-wider font-bold">
+                <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">
                   Coffee Tokens
                 </span>
               </Card>
@@ -292,13 +292,13 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
               <Card
                 variant="parchment"
                 elevation="low"
-                className="flex flex-col items-center p-4 text-center border-2 border-[#2c160a] bg-[#fdfaf2] hover:scale-[1.01]"
+                className="flex flex-col items-center p-4 text-center border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] hover:scale-[1.01]"
               >
                 <span className="text-3xl mb-1.5 select-none">✍️</span>
-                <span className="font-serif font-bold text-base text-[#2c160a]">
+                <span className="font-sans font-bold text-base text-[var(--color-dark-walnut)]">
                   {user.totalNotesWritten}
                 </span>
-                <span className="font-serif text-[9px] text-[#5e463a] uppercase tracking-wider font-bold">
+                <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold">
                   Mysteries Created
                 </span>
               </Card>
@@ -306,21 +306,21 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
               <Card
                 variant="parchment"
                 elevation="low"
-                className="flex flex-col items-center p-4 text-center border-2 border-[#2c160a] bg-[#fdfaf2] col-span-2 hover:scale-[1.005]"
+                className="flex flex-col items-center p-4 text-center border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)] col-span-2 hover:scale-[1.005]"
               >
                 <span className="text-3xl mb-1.5 select-none">🔥</span>
-                <span className="font-serif font-bold text-base text-[#2c160a]">
+                <span className="font-sans font-bold text-base text-[var(--color-dark-walnut)]">
                   {user.totalWarmthContributed || 0}
                 </span>
-                <span className="font-serif text-[9px] text-[#5e463a] uppercase tracking-wider font-bold mt-1">
+                <span className="font-sans text-[9px] text-[var(--color-text-muted)] uppercase tracking-wider font-bold mt-1">
                   Warmth Contributed
                 </span>
               </Card>
             </div>
 
             {/* Rank progression */}
-            <Card variant="deck" elevation="low" className="border-2 border-[#2c160a] p-4.5 flex flex-col gap-3">
-              <h3 className="font-serif font-bold text-xs text-[#2c160a] uppercase tracking-wider">
+            <Card variant="deck" elevation="low" className="border-2 border-[var(--color-border-dark)] p-4.5 flex flex-col gap-3">
+              <h3 className="font-sans font-bold text-xs text-[var(--color-dark-walnut)] uppercase tracking-wider">
                 📈 Reputation Rank Progression
               </h3>
               <ProgressBar value={reputation} max={1200} label="Reputation Level" subLabel={rank.next} />
@@ -334,34 +334,34 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
   };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Profile Card Header */}
       <div
-        className="px-4 py-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        className="px-4 py-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
         style={{
-          backgroundColor: '#f7edd7',
+          backgroundColor: 'var(--color-cream)',
           backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
       >
         <div
-          className="rounded-lg border-2 border-[#2c160a] overflow-hidden"
-          style={{ boxShadow: '3.5px 3.5px 0px #2c160a' }}
+          className="rounded-lg border-2 border-[var(--color-border-dark)] overflow-hidden"
+          style={{ boxShadow: '0 3.5px 0px var(--color-border-dark)' }}
         >
           <div className="wood-plank-bg flex items-center justify-between px-4.5 py-3.5">
             <div className="flex flex-col">
-              <span className="font-serif font-bold text-base text-[#fdfaf2] leading-tight select-none">
+              <span className="font-sans font-bold text-base text-[var(--color-text-light)] leading-tight select-none">
                 {user.username}
               </span>
-              <span className="font-handwritten text-xs text-[#c8a285]">
+              <span className="font-handwritten text-xs text-[var(--color-text-muted)]">
                 {rank.icon} {rank.label}
               </span>
             </div>
             <div className="text-right">
-              <span className="font-mono text-[9px] text-[#c8a285] block font-bold">
+              <span className="font-mono text-[9px] text-[var(--color-text-muted)] block font-bold">
                 MEMBER ID: #{user.id.substring(0, 8).toUpperCase()}
               </span>
-              <span className="font-mono text-[9px] text-[#eeded1] block font-bold mt-0.5">
+              <span className="font-mono text-[9px] text-[var(--color-text-light)] block font-bold mt-0.5">
                 Joined {formatDate(user.joinedAt)}
               </span>
             </div>
@@ -370,11 +370,11 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
       </div>
 
       {/* Tabs Header */}
-      <div className="flex border-b-2 border-[#2c160a] bg-[#f7edd7] flex-shrink-0 font-serif text-xs select-none">
+      <div className="flex border-b-2 border-[var(--color-border-dark)] bg-[var(--color-cream)] flex-shrink-0 font-sans text-xs select-none">
         <button
           onClick={() => setActiveTab('goals')}
           className={`flex-1 text-center py-3 font-bold cursor-pointer transition-all duration-150 ${
-            activeTab === 'goals' ? 'bg-[#2c160a] text-[#fdfaf2]' : 'text-[#2c160a] hover:bg-[#eeded1]'
+            activeTab === 'goals' ? 'bg-[var(--color-border-dark)] text-[var(--color-text-light)]' : 'text-[var(--color-dark-walnut)] hover:bg-[var(--color-cream)]'
           }`}
         >
           🎯 Goals
@@ -382,7 +382,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
         <button
           onClick={() => setActiveTab('achievements')}
           className={`flex-1 text-center py-3 font-bold cursor-pointer transition-all duration-150 ${
-            activeTab === 'achievements' ? 'bg-[#2c160a] text-[#fdfaf2]' : 'text-[#2c160a] hover:bg-[#eeded1]'
+            activeTab === 'achievements' ? 'bg-[var(--color-border-dark)] text-[var(--color-text-light)]' : 'text-[var(--color-dark-walnut)] hover:bg-[var(--color-cream)]'
           }`}
         >
           🏆 Badges
@@ -390,7 +390,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
         <button
           onClick={() => setActiveTab('activity')}
           className={`flex-1 text-center py-3 font-bold cursor-pointer transition-all duration-150 ${
-            activeTab === 'activity' ? 'bg-[#2c160a] text-[#fdfaf2]' : 'text-[#2c160a] hover:bg-[#eeded1]'
+            activeTab === 'activity' ? 'bg-[var(--color-border-dark)] text-[var(--color-text-light)]' : 'text-[var(--color-dark-walnut)] hover:bg-[var(--color-cream)]'
           }`}
         >
           🕒 Activity
@@ -398,7 +398,7 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
         <button
           onClick={() => setActiveTab('stats')}
           className={`flex-1 text-center py-3 font-bold cursor-pointer transition-all duration-150 ${
-            activeTab === 'stats' ? 'bg-[#2c160a] text-[#fdfaf2]' : 'text-[#2c160a] hover:bg-[#eeded1]'
+            activeTab === 'stats' ? 'bg-[var(--color-border-dark)] text-[var(--color-text-light)]' : 'text-[var(--color-dark-walnut)] hover:bg-[var(--color-cream)]'
           }`}
         >
           📊 Stats
@@ -406,8 +406,9 @@ export const ProfileScreen = ({ user, cafe, dailyObjectives }: ProfileScreenProp
       </div>
 
       {/* Tab Contents */}
-      <div className="flex-1 overflow-y-auto p-5 bg-[#fdfaf2]">{renderTabContent()}</div>
+      <div className="flex-1 overflow-y-auto p-5 bg-[var(--color-parchment)]">{renderTabContent()}</div>
     </div>
   );
 };
 export default ProfileScreen;
+

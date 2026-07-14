@@ -86,18 +86,18 @@ export const PuzzleCornerScreen = ({
   };
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header */}
       <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
         style={{
-          backgroundColor: '#f7edd7',
+          backgroundColor: 'var(--color-cream)',
           backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
       >
-        <h2 className="font-serif font-bold text-base text-[#2c160a] mb-1">🧩 Puzzle Corner</h2>
-        <p className="font-serif text-xs text-[#5e463a] italic leading-relaxed">
+        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] mb-1">🧩 Puzzle Corner</h2>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic leading-relaxed">
           Daily handcrafted challenges. Solve to earn Coffee Tokens and reputation.
         </p>
       </div>
@@ -106,15 +106,15 @@ export const PuzzleCornerScreen = ({
         {/* Handcrafted Daily Puzzle Card */}
         <div className="p-5">
           {dailyPuzzle ? (
-            <Card variant="wood" elevation="high" className="p-6 border-2 border-[#2c160a] relative">
+            <Card variant="wood" elevation="high" className="p-6 border-2 border-[var(--color-border-dark)] relative">
               {/* Daily tag */}
-              <div className="absolute top-3 right-3 bg-[#cf7929] text-[#fdfaf2] font-mono text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-[1px_1px_0px_#2c160a] select-none">
+              <div className="absolute top-3 right-3 bg-[var(--color-caramel)] text-[var(--color-text-light)] font-mono text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-[0_2px_0px_var(--color-border-dark)] select-none">
                 Today's Daily
               </div>
 
               <div className="flex flex-col items-center gap-3.5 text-center">
                 <span className="text-5xl animate-float select-none">☕</span>
-                <h3 className="font-serif font-bold text-base text-[#fdfaf2] tracking-wider uppercase">
+                <h3 className="font-sans font-bold text-lg text-[var(--color-text-light)] tracking-wider uppercase">
                   {dailyPuzzle.title}
                 </h3>
                 <div className="w-16 h-0.5 bg-[#eeded1]/20" />
@@ -124,7 +124,7 @@ export const PuzzleCornerScreen = ({
                 </p>
 
                 {dailySolved ? (
-                  <div className="w-full mt-2 p-4 bg-[#e1ead4] border-2 border-[#4a7c59] rounded-lg text-center font-serif text-xs text-[#2e4d37] font-bold shadow-[2px_2px_0px_#2c160a]">
+                  <div className="w-full mt-2 p-4 bg-[var(--color-cream)] border-2 border-[var(--color-sage)] rounded-lg text-center font-sans text-xs text-[var(--color-sage)] font-bold shadow-[0_3px_0px_var(--color-border-dark)]">
                     ✅ Solved! You earned +1 Coffee Token & +20 Reputation.
                   </div>
                 ) : (
@@ -133,14 +133,14 @@ export const PuzzleCornerScreen = ({
                     {dailyPuzzle.hint && (
                       <div>
                         {showDailyHint ? (
-                          <div className="p-2.5 bg-[#2c160a]/50 border-2 border-dashed border-[#eeded1]/20 rounded-md font-serif text-[10px] text-[#eeded1]/90 leading-normal max-w-sm mx-auto text-left">
+                          <div className="p-2.5 bg-[var(--color-border-dark)]/50 border-2 border-dashed border-[var(--color-bronze)]/30 rounded-md font-sans text-[11px] text-[#eeded1]/90 leading-normal max-w-sm mx-auto text-left">
                             💡 <strong>Hint:</strong> {dailyPuzzle.hint}
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => setShowDailyHint(true)}
-                            className="font-serif text-[10px] text-[#cf7929] italic underline hover:text-[#eeded1] cursor-pointer"
+                            className="font-sans text-[11px] text-[var(--color-caramel)] italic underline hover:text-[var(--color-text-light)] cursor-pointer"
                           >
                             Reveal Hint...
                           </button>
@@ -158,7 +158,7 @@ export const PuzzleCornerScreen = ({
                         }}
                         placeholder="Type answer here..."
                         maxLength={50}
-                        className="flex-grow rounded-md border-2 border-[#eeded1] px-3 py-2 font-serif text-xs bg-[#2c160a]/40 text-[#fdfaf2] placeholder:text-[#c8a285]/70 focus:outline-none focus:border-[#cf7929]"
+                        className="flex-grow rounded-md border-2 border-[var(--color-border-dark)] px-3 py-2 font-sans text-xs bg-[var(--color-cream)] text-[var(--color-text-dark)] placeholder:text-[var(--color-text-muted)]/70 focus:outline-none focus:border-[var(--color-caramel)]"
                       />
                       <Button
                         type="submit"
@@ -172,7 +172,7 @@ export const PuzzleCornerScreen = ({
                     </div>
 
                     {solveDailyError && (
-                      <p className="text-[10px] text-[#cf7929] font-serif italic font-bold">
+                      <p className="text-[10px] text-[var(--color-warm-red)] font-sans italic font-bold">
                         {solveDailyError}
                       </p>
                     )}
@@ -180,7 +180,7 @@ export const PuzzleCornerScreen = ({
                 )}
 
                 {solveDailySuccess && (
-                  <p className="text-xs text-[#eeded1] font-serif italic font-bold">
+                  <p className="text-xs text-[var(--color-text-light)] font-sans italic font-bold">
                     {solveDailySuccess}
                   </p>
                 )}
@@ -195,7 +195,7 @@ export const PuzzleCornerScreen = ({
 
         {/* Leaderboard */}
         <div className="px-5">
-          <h3 className="font-serif font-bold text-sm text-[#2c160a] mb-3 flex items-center gap-2 px-1">
+          <h3 className="font-sans font-bold text-sm text-[var(--color-dark-walnut)] mb-3 flex items-center gap-2 px-1">
             <span>🏆</span> Tangram Speed Leaderboard
           </h3>
           {isLoading ? (
@@ -209,12 +209,12 @@ export const PuzzleCornerScreen = ({
               message="Tangram challenge leaderboard will populate soon."
             />
           ) : (
-            <Card variant="parchment" elevation="low" className="p-0 overflow-hidden border-2 border-[#2c160a] bg-[#fdfaf2]">
+            <Card variant="parchment" elevation="low" className="p-0 overflow-hidden border-2 border-[var(--color-border-dark)] bg-[var(--color-parchment)]">
               <table className="w-full border-collapse">
                 <thead>
                   <tr
-                    className="border-b-2 border-[#2c160a] font-serif text-[10px] uppercase tracking-widest text-[#5e463a]"
-                    style={{ backgroundColor: '#eeded1' }}
+                    className="border-b-2 border-[var(--color-border-dark)] font-sans text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]"
+                    style={{ backgroundColor: 'var(--color-cream)' }}
                   >
                     <th className="py-2.5 px-4.5 text-left font-bold select-none">#</th>
                     <th className="py-2.5 px-4.5 text-left font-bold select-none">Visitor</th>
@@ -225,13 +225,13 @@ export const PuzzleCornerScreen = ({
                   {leaderboard.map((entry, idx) => (
                     <tr
                       key={entry.username}
-                      className={`border-b border-dashed border-[#c8a285]/55 last:border-0 ${idx === 0 ? 'bg-[#d4af37]/10' : ''}`}
+                      className={`border-b border-dashed border-[var(--color-bronze)]/55 last:border-0 ${idx === 0 ? 'bg-[var(--color-accent-gold)]/10' : ''}`}
                     >
-                      <td className="py-2.5 px-4.5 font-mono text-xs text-[#5e463a] select-none">
+                      <td className="py-2.5 px-4.5 font-mono text-xs text-[var(--color-text-muted)] select-none">
                         {idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${entry.rank}.`}
                       </td>
-                      <td className="py-2.5 px-4.5 font-serif text-xs text-[#2c160a] font-bold">{entry.username}</td>
-                      <td className="py-2.5 px-4.5 font-mono text-xs text-[#cf7929] text-right font-bold select-none">
+                      <td className="py-2.5 px-4.5 font-sans text-xs text-[var(--color-text-dark)] font-bold">{entry.username}</td>
+                      <td className="py-2.5 px-4.5 font-mono text-xs text-[var(--color-caramel)] text-right font-bold select-none">
                         {Math.floor(entry.timeMs / 1000)}s
                       </td>
                     </tr>

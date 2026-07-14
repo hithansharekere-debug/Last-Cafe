@@ -16,7 +16,7 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   // Base cozy styles - larger click targets, rounded corners, soft presses
-  const baseStyle = 'inline-flex items-center justify-center font-serif rounded-md border-2 border-[#2c160a] transition-all duration-150 select-none shadow-[3px_3px_0px_#2c160a] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:translate-x-0 disabled:active:shadow-[3px_3px_0px_#2c160a]';
+  const baseStyle = 'inline-flex items-center justify-center font-sans rounded-md border-2 border-[#2c160a] transition-all duration-150 select-none shadow-[3px_3px_0px_#2c160a] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none disabled:opacity-45 disabled:cursor-not-allowed disabled:active:translate-y-0 disabled:active:translate-x-0 disabled:active:shadow-[3px_3px_0px_#2c160a]';
   
   // Size styles
   const sizeStyles = {

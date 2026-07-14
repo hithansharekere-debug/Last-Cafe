@@ -47,18 +47,18 @@ export const DiscoverScreen = ({
   }, [onFetchPuzzles, activeFilter]);
 
   return (
-    <div className="flex flex-col w-full h-full overflow-hidden bg-[#fdfaf2] animate-fade-in">
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-parchment)] animate-fade-in">
       {/* Header + filters */}
       <div
-        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[#2c160a] flex-shrink-0"
+        className="flex flex-col px-5 pt-5 pb-4 border-b-2 border-[var(--color-border-dark)] flex-shrink-0"
         style={{
-          backgroundColor: '#f7edd7',
+          backgroundColor: 'var(--color-cream)',
           backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
           backgroundSize: '16px 16px',
         }}
       >
-        <h2 className="font-serif font-bold text-base text-[#2c160a] mb-1">🔍 Discover Feed</h2>
-        <p className="font-serif text-xs text-[#5e463a] italic mb-3">
+        <h2 className="font-sans font-bold text-lg text-[var(--color-dark-walnut)] mb-1">🔍 Discover Feed</h2>
+        <p className="font-sans text-xs text-[var(--color-text-muted)] italic mb-3">
           Explore templates-based puzzles posted by players around the world.
         </p>
 
@@ -69,10 +69,10 @@ export const DiscoverScreen = ({
               <button
                 key={value}
                 onClick={() => onFilterChange(value)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 border-[#2c160a] font-serif text-xs whitespace-nowrap flex-shrink-0 transition-all duration-200 cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border-2 border-[var(--color-border-dark)] font-sans text-xs whitespace-nowrap flex-shrink-0 transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-[#2c160a] text-[#fdfaf2] shadow-[2px_2px_0px_#cf7929] scale-[1.02]'
-                    : 'bg-[#eeded1] text-[#2c160a] hover:bg-[#e2cbba] hover:scale-[1.01]'
+                    ? 'bg-[var(--color-border-dark)] text-[var(--color-text-light)] shadow-[0_3px_0px_var(--color-caramel)] scale-[1.02]'
+                    : 'bg-[var(--color-cream)] text-[var(--color-text-dark)] hover:bg-[var(--color-paper-shadow)] hover:scale-[1.01]'
                 }`}
               >
                 <span className="select-none text-sm">{icon}</span>

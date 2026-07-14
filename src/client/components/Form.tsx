@@ -3,7 +3,7 @@ import React, { type InputHTMLAttributes, type TextareaHTMLAttributes, type Sele
 export const Label = ({ children, className = '', ...props }: LabelHTMLAttributes<HTMLLabelElement>) => {
   return (
     <label
-      className={`block font-serif text-xs font-bold text-[#2c160a] uppercase tracking-wider mb-2 select-none ${className}`}
+      className={`block font-sans text-xs font-bold text-[#2c160a] uppercase tracking-wider mb-2 select-none ${className}`}
       {...props}
     >
       {children}
@@ -16,7 +16,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputHTMLAttributes<HTML
     return (
       <input
         ref={ref}
-        className={`w-full h-11 px-3 py-2 font-serif text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] placeholder:text-[#8a6e5f]/60 transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-11 px-3 py-2 font-sans text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] placeholder:text-[#8a6e5f]/60 transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed ${className}`}
         {...props}
       />
     );
@@ -29,7 +29,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaHTMLAttrib
     return (
       <textarea
         ref={ref}
-        className={`w-full min-h-[140px] px-3 py-2 font-serif text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] placeholder:text-[#8a6e5f]/60 transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed resize-y ${className}`}
+        className={`w-full min-h-[140px] px-3 py-2 font-sans text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] placeholder:text-[#8a6e5f]/60 transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed resize-y ${className}`}
         {...props}
       />
     );
@@ -42,7 +42,7 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectHTMLAttributes<H
     return (
       <select
         ref={ref}
-        className={`w-full h-11 px-3 py-2 font-serif text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed ${className}`}
+        className={`w-full h-11 px-3 py-2 font-sans text-sm rounded-md border-2 border-[#2c160a] bg-[#fdfaf2] text-[#2c160a] transition-all focus:outline-none focus:ring-2 focus:ring-[#cf7929] focus:border-[#cf7929] disabled:opacity-45 disabled:cursor-not-allowed ${className}`}
         {...props}
       >
         {children}
@@ -51,3 +51,4 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectHTMLAttributes<H
   }
 );
 Select.displayName = 'Select';
+
