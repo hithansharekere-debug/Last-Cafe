@@ -103,41 +103,44 @@ export const PuzzleCornerScreen = ({
         {/* Handcrafted Daily Puzzle Card */}
         <div>
           {dailyPuzzle ? (
-            <Card variant="wood" elevation="high" className="p-6 border-2 border-[var(--color-border-dark)] relative">
+            <Card variant="napkin" elevation="high" className="p-6 border-2 border-[#8D6846] relative">
               {/* Daily tag */}
-              <div className="absolute top-3 right-3 bg-[var(--color-caramel)] text-[var(--color-text-light)] font-mono text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded shadow-[0_2px_0px_var(--color-border-dark)] select-none">
+              <div className="absolute top-3 right-3 bg-[#D9A441] text-[#FBF6EE] font-sans text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded shadow-[0_2px_0px_#8D6846] select-none">
                 Today's Daily
               </div>
 
-              <div className="flex flex-col items-center gap-3.5 text-center">
+              <div className="flex flex-col items-center gap-4 text-center">
                 <span className="text-5xl animate-float select-none">☕</span>
-                <h3 className="font-sans font-bold text-lg text-[var(--color-text-light)] tracking-wider uppercase">
+                <h3 className="font-sans font-bold text-[34px] text-[#4B3528] leading-tight tracking-wider uppercase">
                   {dailyPuzzle.title}
                 </h3>
-                <div className="w-16 h-0.5 bg-[#eeded1]/20" />
+                <div className="w-16 h-0.5 bg-[#8D6846]/20" />
                 
-                <p className="font-handwritten text-sm text-[#eeded1] leading-relaxed max-w-sm whitespace-pre-wrap">
+                <p className="font-sans text-[18px] font-medium text-[#6B4A34] leading-relaxed max-w-xl whitespace-pre-wrap">
                   {dailyPuzzle.question}
                 </p>
 
                 {dailySolved ? (
-                  <div className="w-full mt-2 p-4 bg-[var(--color-cream)] border-2 border-[var(--color-sage)] rounded-lg text-center font-sans text-xs text-[var(--color-sage)] font-bold shadow-[0_3px_0px_var(--color-border-dark)]">
+                  <div 
+                    className="w-full bg-[#AEB48D]/20 border-2 border-[#98A27A] rounded-xl text-center font-sans text-[14px] text-[#3B271C] font-bold"
+                    style={{ marginTop: '12px', padding: '14px 14px 10px 14px' }}
+                  >
                     ✅ Solved! You earned +1 Coffee Token & +20 Reputation.
                   </div>
                 ) : (
-                  <form onSubmit={handleSolveDailySubmit} className="w-full flex flex-col gap-3.5 mt-2">
+                  <form onSubmit={handleSolveDailySubmit} className="w-full flex flex-col gap-4 mt-2">
                     {/* Hint */}
                     {dailyPuzzle.hint && (
-                      <div>
+                      <div className="w-full">
                         {showDailyHint ? (
-                          <div className="p-2.5 bg-[var(--color-border-dark)]/50 border-2 border-dashed border-[var(--color-bronze)]/30 rounded-md font-sans text-[11px] text-[#eeded1]/90 leading-normal max-w-sm mx-auto text-left">
+                          <div className="p-3 bg-[#FBF6EE] border-2 border-dashed border-[#8D6846]/30 rounded-xl font-sans text-[15px] text-[#82634B] leading-normal max-w-sm mx-auto text-left">
                             💡 <strong>Hint:</strong> {dailyPuzzle.hint}
                           </div>
                         ) : (
                           <button
                             type="button"
                             onClick={() => setShowDailyHint(true)}
-                            className="font-sans text-[11px] text-[var(--color-caramel)] italic underline hover:text-[var(--color-text-light)] cursor-pointer"
+                            className="font-sans text-[14px] text-[#D9A441] italic underline hover:text-[#4B3528] cursor-pointer"
                           >
                             Reveal Hint...
                           </button>
@@ -153,23 +156,21 @@ export const PuzzleCornerScreen = ({
                           setDailyAnswer(e.target.value);
                           if (solveDailyError) setSolveDailyError(null);
                         }}
-                        placeholder="Type answer here..."
+                        placeholder="Enter answer..."
                         maxLength={50}
-                        className="flex-grow rounded-md border-2 border-[var(--color-border-dark)] px-3 py-2 font-sans text-xs bg-[var(--color-cream)] text-[var(--color-text-dark)] placeholder:text-[var(--color-text-muted)]/70 focus:outline-none focus:border-[var(--color-caramel)]"
+                        className="flex-grow rounded-xl border-2 border-[#8D6846] px-4 py-2 font-sans text-[14px] bg-[#FBF6EE] text-[#4B3528] focus:outline-none focus:border-[#D9A441]"
                       />
-                      <Button
+                      <button
                         type="submit"
-                        variant="secondary"
-                        size="sm"
                         disabled={!dailyAnswer.trim() || isSolvingDaily}
-                        className="cursor-pointer font-bold"
+                        className="px-6 py-2 rounded-xl bg-[#6B4B35] text-[#FBF6EE] font-bold text-[14px] border-2 border-[#3E291E] hover:bg-[#4B3528] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                       >
-                        {isSolvingDaily ? 'Solving...' : 'Solve'}
-                      </Button>
+                        {isSolvingDaily ? 'Submitting...' : 'Submit'}
+                      </button>
                     </div>
 
                     {solveDailyError && (
-                      <p className="text-[10px] text-[var(--color-warm-red)] font-sans italic font-bold">
+                      <p className="text-[14px] text-[#C97464] font-sans italic font-bold">
                         {solveDailyError}
                       </p>
                     )}
@@ -177,7 +178,7 @@ export const PuzzleCornerScreen = ({
                 )}
 
                 {solveDailySuccess && (
-                  <p className="text-xs text-[var(--color-text-light)] font-sans italic font-bold">
+                  <p className="text-xs text-[#98A27A] font-sans italic font-bold">
                     {solveDailySuccess}
                   </p>
                 )}

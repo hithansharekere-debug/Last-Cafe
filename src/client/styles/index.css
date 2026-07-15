@@ -930,10 +930,20 @@ button:active:not(:disabled), .button-cozy:active:not(:disabled) {
   background-color: var(--color-cream);
   background-image: radial-gradient(var(--color-paper-shadow) 1px, transparent 1px);
   background-size: 16px 16px;
+  margin-bottom: 28px !important; /* Spacing Header -> 28px -> Main Card */
 }
 @media (max-width: 640px) {
   .page-header {
     padding: 24px 16px 16px 16px !important;
+  }
+}
+
+.hero-header-card {
+  padding: 24px !important;
+}
+@media (max-width: 640px) {
+  .hero-header-card {
+    padding: 16px 12px !important; /* Reduced padding on mobile */
   }
 }
 
@@ -1042,6 +1052,180 @@ button:active:not(:disabled), .button-cozy:active:not(:disabled) {
   .status-brewed-mobile {
     display: none !important;
   }
+}
+
+.wooden-profile-card {
+  background-color: #5B3D2C !important;
+  border: 2px solid #3E291E !important;
+  border-top-color: #7A543D !important; /* Top highlight */
+  border-radius: 20px !important;
+  padding: 20px 24px !important; /* 24px horizontal, 20px vertical */
+  min-height: 100px !important; /* Approximately 95-110px */
+  box-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.08), 0 4px 10px rgba(44, 22, 10, 0.25) !important;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px !important; /* Column gap */
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.profile-tab-btn {
+  height: 44px;
+  padding: 0 14px !important; /* 14px horizontal padding */
+  border-radius: 999px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.16s ease-in-out !important; /* 160ms transition */
+  flex: 1 1 0px;
+  min-width: 90px;
+  max-width: 180px;
+}
+@media (max-width: 640px) {
+  .profile-tab-btn {
+    flex: 1 1 calc(50% - 12px);
+    max-width: none;
+  }
+}
+.profile-tab-btn.inactive {
+  background-color: #FBF6EE !important;
+  border: 2px solid #C6965A !important;
+  color: #4B3528 !important;
+  box-shadow: 0 2px 4px rgba(59, 39, 28, 0.08) !important;
+}
+.profile-tab-btn.inactive:hover {
+  background-color: #F7E9D3 !important;
+  transform: translateY(-1px) !important; /* subtle hover lift */
+  box-shadow: 0 4px 8px rgba(59, 39, 28, 0.12) !important;
+}
+.profile-tab-btn.inactive:active {
+  transform: translateY(0) !important;
+}
+.profile-tab-btn.active {
+  background-color: #EEDAD0 !important; /* slightly darker warm parchment */
+  color: #4B3528 !important;
+  border: 2px solid #D9A441 !important; /* warm golden outline */
+  box-shadow: inset 0 2px 4px rgba(59, 39, 28, 0.12) !important;
+}
+
+.library-card-cozy {
+  background-color: #FBF6EE !important;
+  border: 2px solid #8D6846 !important;
+  border-radius: 18px !important;
+  padding: 20px !important; /* Card padding: 20px */
+  box-shadow: 0 2px 4px rgba(59, 39, 28, 0.06) !important;
+  transition: transform 160ms ease-out, box-shadow 160ms ease-out, filter 160ms ease-out !important;
+  box-sizing: border-box;
+}
+.library-card-cozy:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.02);
+  box-shadow: 0 4px 10px rgba(59, 39, 28, 0.12) !important;
+}
+
+.library-list-row-cozy {
+  background-color: #FBF6EE !important;
+  border: 2px solid #8D6846 !important;
+  border-radius: 18px !important;
+  padding: 14px 18px !important; /* List row padding: 14px 18px */
+  box-shadow: 0 2px 4px rgba(59, 39, 28, 0.05) !important;
+  transition: transform 160ms ease-out, box-shadow 160ms ease-out, filter 160ms ease-out !important;
+  box-sizing: border-box;
+}
+.library-list-row-cozy:hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.02);
+  box-shadow: 0 4px 8px rgba(59, 39, 28, 0.1) !important;
+}
+
+.cozy-mystery-card-wrapper {
+  transition: z-index 180ms ease-out;
+}
+.cozy-mystery-card {
+  opacity: 0;
+  transform: translateY(8px);
+  animation: cozyCardEntry 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  transition: transform 180ms ease-out, box-shadow 180ms ease-out, border-color 180ms ease-out;
+  border-radius: 18px !important;
+  background-color: #FBF6EE !important;
+  border: 2px solid #8D6846 !important;
+  box-shadow: 0 4px 6px rgba(59, 39, 28, 0.08) !important;
+}
+.cozy-mystery-card:hover {
+  transform: translateY(-2px) scale(1.01) !important;
+  box-shadow: 0 8px 16px rgba(59, 39, 28, 0.15) !important;
+  border-color: #D9A441 !important; /* Slightly brightens border to Amber */
+}
+
+@keyframes cozyCardEntry {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.solve-mystery-btn {
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #6B4B35, #4B3528) !important;
+  color: #FBF6EE !important;
+  border: 2px solid #3E291E !important;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: all 180ms ease-out;
+  box-shadow: 0 3px 6px rgba(44, 22, 10, 0.25) !important;
+  width: 100%;
+}
+.solve-mystery-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+  box-shadow: 0 5px 12px rgba(44, 22, 10, 0.35) !important;
+}
+.solve-mystery-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 3px rgba(44, 22, 10, 0.2) !important;
+}
+
+.profile-tabs-header {
+  margin-top: 32px !important; /* Spacing below the profile card on desktop */
+}
+@media (max-width: 640px) {
+  .profile-tabs-header {
+    margin-top: 20px !important; /* Spacing below the profile card on mobile */
+  }
+}
+
+.composer-category-pill {
+  background-color: transparent !important;
+  color: #8D6846 !important;
+  border: 1px solid #8D6846 !important;
+  border-radius: 999px !important;
+  transition: all 150ms ease-in-out !important;
+  cursor: pointer !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+.composer-category-pill:hover {
+  background-color: #FBF6EE !important;
+}
+.composer-category-pill.active {
+  background-color: #D9A441 !important;
+  color: #FFF8EF !important;
+  border: 2px solid #3E291E !important;
+  box-shadow: 0 3px 6px rgba(59, 39, 28, 0.12) !important;
+  transform: scale(1.03) !important;
 }
 
 

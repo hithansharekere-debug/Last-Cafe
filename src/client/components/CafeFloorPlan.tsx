@@ -136,10 +136,7 @@ export const CafeFloorPlan = ({ user, rooms, totalWarmth }: CafeFloorPlanProps) 
           <span className="text-xs select-none">{unlocked ? theme.symbol : '🔒'}</span>
         </div>
 
-        {/* Flickering flame overlay inside fireplace cell */}
-        {roomId === 'fireplace' && unlocked && (
-          <span className="absolute bottom-2 right-2 text-base animate-fireplace select-none z-10">🔥</span>
-        )}
+
 
         <div className="mt-2.5 flex justify-between items-center w-full relative z-10">
           {unlocked ? (

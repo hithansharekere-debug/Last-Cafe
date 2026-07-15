@@ -485,6 +485,43 @@ export const useCafe = () => {
     }
   }, [user]);
 
+  const editPuzzle = useCallback(async (id: string, puzzleData: any): Promise<boolean> => {
+    setError(null);
+    try {
+      const res = await fetch(`/api/puzzles/${id}/edit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(puzzleData),
+      });
+      if (!res.ok) throw new Error(`Edit puzzle error ${res.status}`);
+      const resData = await res.json();
+      if (resData.success && resData.data) {
+        setPuzzles((prev) => prev.map((p) => p.id === id ? resData.data.puzzle : p));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to edit puzzle:', err);
+      return false;
+    }
+  }, []);
+
+  const deletePuzzle = useCallback(async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/puzzles/${id}/delete`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setPuzzles((prev) => prev.filter((p) => p.id !== id));
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.error('Failed to delete puzzle:', err);
+      return false;
+    }
+  }, []);
+
   const solvePuzzle = useCallback(async (id: string, answer: string): Promise<boolean> => {
     setError(null);
     try {
@@ -597,6 +634,8 @@ export const useCafe = () => {
     puzzles,
     fetchPuzzles,
     publishPuzzle,
+    editPuzzle,
+    deletePuzzle,
     solvePuzzle,
     likePuzzle,
     favoritePuzzle,

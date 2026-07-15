@@ -257,6 +257,9 @@ export interface CommunityPuzzle {
   likedBy: string[];            // User IDs who liked it
   favorites: number;
   favoritedBy: string[];        // User IDs who favorited it
+  editCount?: number;
+  lastEditedAt?: number;
+  isDeleted?: boolean;
 }
 
 export interface PuzzlesListResponse {

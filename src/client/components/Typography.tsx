@@ -9,9 +9,14 @@ interface TypographyProps {
 export const PageTitle = ({ children, className = '', style }: TypographyProps) => {
   return (
     <h1
-      className={`font-sans font-bold text-[var(--color-dark-walnut)] leading-tight tracking-wide ${className}`}
+      className={`font-sans font-bold text-[var(--color-dark-walnut)] tracking-wide ${className}`}
       style={{
-        fontSize: 'clamp(30px, 5vw, 34px)',
+        fontSize: 'clamp(28px, 5.5vw, 48px)',
+        lineHeight: 1.1,
+        width: '100%',
+        maxWidth: '100%',
+        overflow: 'hidden',
+        wordBreak: 'normal',
         ...style
       }}
     >
@@ -25,7 +30,7 @@ export const SectionTitle = ({ children, className = '', style }: TypographyProp
     <h2
       className={`font-sans font-bold text-[var(--color-dark-walnut)] leading-normal tracking-wide ${className}`}
       style={{
-        fontSize: 'clamp(22px, 3.5vw, 24px)',
+        fontSize: '24px',
         ...style
       }}
     >

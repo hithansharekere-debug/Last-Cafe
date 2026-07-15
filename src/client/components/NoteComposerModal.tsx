@@ -91,10 +91,8 @@ export const NoteComposerModal = ({
                       key={cat}
                       type="button"
                       onClick={() => setSelectedCategory(cat)}
-                      className={`px-3 py-1.5 text-xs font-sans rounded-md border-2 border-[var(--color-border-dark)] transition-all cursor-pointer shadow-[0_2.5px_0px_var(--color-border-dark)] active:translate-y-[1px] active:shadow-none font-bold ${
-                        isActive
-                          ? 'bg-[var(--color-caramel)] text-[var(--color-text-light)]'
-                          : 'bg-[var(--color-cream)] text-[var(--color-dark-walnut)] hover:bg-[var(--color-paper-shadow)]'
+                      className={`px-3.5 py-1.5 text-xs font-sans font-bold select-none ${
+                        isActive ? 'composer-category-pill active' : 'composer-category-pill'
                       }`}
                     >
                       {cat}

@@ -32,6 +32,13 @@ function getTodayDateString(): string {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 }
 
+function normalizeAnswer(text: string): string {
+  return String(text || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
 function getDailyObjectivesForDate(dateStr: string): DailyObjective[] {
   let seed = 0;
   for (let i = 0; i < dateStr.length; i++) {
@@ -714,7 +721,7 @@ api.get('/puzzles', async (c) => {
     } else {
       list = await RedisService.getPuzzlesByCategory(filter, 100);
     }
-    return c.json<PuzzlesListResponse>({ success: true, data: { puzzles: list } });
+    return c.json<PuzzlesListResponse>({ success: true, data: { puzzles: list.filter(p => !p.isDeleted) } });
   } catch (error) {
     console.error('Fetch puzzles server route failure:', error);
     return c.json<ErrorResponse>({ success: false, error: 'Failed to fetch community mysteries' }, 500);
@@ -734,6 +741,11 @@ api.post('/puzzles', async (c) => {
     const { title, description, puzzleText, hint, answer, difficulty, category } = body;
     if (!title || !puzzleText || !answer || !difficulty || !category) {
       return c.json<ErrorResponse>({ success: false, error: 'Missing required parameters to publish puzzle' }, 400);
+    }
+
+    const normalizedAns = normalizeAnswer(answer);
+    if (!normalizedAns) {
+      return c.json<ErrorResponse>({ success: false, error: 'Answer cannot be empty or blank spaces.' }, 400);
     }
 
     const user = await RedisService.getUser(userId);
@@ -756,7 +768,7 @@ api.post('/puzzles', async (c) => {
       description: String(description || '').trim().substring(0, 200),
       puzzleText: String(puzzleText).trim().substring(0, 500),
       hint: String(hint || '').trim().substring(0, 150),
-      answer: String(answer).trim().toLowerCase(),
+      answer: normalizedAns,
       difficulty: difficulty as any,
       category: category as any,
       createdAt: now,
@@ -799,6 +811,92 @@ api.post('/puzzles', async (c) => {
   }
 });
 
+api.post('/puzzles/:id/edit', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { userId } = await getCurrentUser();
+    let body: any;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
+    }
+
+    const puzzle = await RedisService.getPuzzle(id);
+    if (!puzzle) {
+      return c.json<ErrorResponse>({ success: false, error: 'Mystery not found' }, 404);
+    }
+
+    if (puzzle.creatorId !== userId) {
+      return c.json<ErrorResponse>({ success: false, error: 'You are not authorized to edit this mystery.' }, 403);
+    }
+
+    const editCount = puzzle.editCount || 0;
+    if (editCount >= 3) {
+      return c.json<ErrorResponse>({ success: false, error: 'This mystery has already been edited the maximum number of times.' }, 400);
+    }
+
+    const { title, description, puzzleText, hint, answer, difficulty } = body;
+    if (!title || !puzzleText || !answer || !difficulty) {
+      return c.json<ErrorResponse>({ success: false, error: 'Missing required fields' }, 400);
+    }
+
+    const normalizedAns = normalizeAnswer(answer);
+    if (!normalizedAns) {
+      return c.json<ErrorResponse>({ success: false, error: 'Answer cannot be empty or blank spaces.' }, 400);
+    }
+
+    // Update puzzle fields
+    puzzle.title = String(title).trim().substring(0, 50);
+    puzzle.description = String(description || '').trim().substring(0, 200);
+    puzzle.puzzleText = String(puzzleText).trim().substring(0, 500);
+    puzzle.hint = String(hint || '').trim().substring(0, 150);
+    puzzle.answer = normalizedAns;
+    puzzle.difficulty = difficulty as any;
+    
+    // Increment edit count and record edit timestamp
+    puzzle.editCount = editCount + 1;
+    puzzle.lastEditedAt = Math.floor(Date.now() / 1000);
+
+    await RedisService.savePuzzle(puzzle);
+
+    return c.json({
+      success: true,
+      data: {
+        puzzle,
+      }
+    });
+  } catch (error) {
+    console.error('Edit puzzle server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to save mystery edits' }, 500);
+  }
+});
+
+api.post('/puzzles/:id/delete', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const { userId } = await getCurrentUser();
+
+    const puzzle = await RedisService.getPuzzle(id);
+    if (!puzzle) {
+      return c.json<ErrorResponse>({ success: false, error: 'Mystery not found' }, 404);
+    }
+
+    if (puzzle.creatorId !== userId) {
+      return c.json<ErrorResponse>({ success: false, error: 'You are not authorized to delete this mystery.' }, 403);
+    }
+
+    // Perform soft delete
+    puzzle.isDeleted = true;
+    await RedisService.savePuzzle(puzzle);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Delete puzzle server route failure:', error);
+    return c.json<ErrorResponse>({ success: false, error: 'Failed to delete mystery' }, 500);
+  }
+});
+
 api.post('/puzzles/:id/solve', async (c) => {
   try {
     const puzzleId = c.req.param('id');
@@ -810,7 +908,7 @@ api.post('/puzzles/:id/solve', async (c) => {
       return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
     }
 
-    const submitted = String(body.answer || '').trim().toLowerCase();
+    const submitted = normalizeAnswer(body.answer);
     const puzzle = await RedisService.getPuzzle(puzzleId);
     if (!puzzle) return c.json<ErrorResponse>({ success: false, error: 'Puzzle not found' }, 404);
 
@@ -826,7 +924,9 @@ api.post('/puzzles/:id/solve', async (c) => {
       return c.json<ErrorResponse>({ success: false, error: 'You have already solved this mystery.' }, 400);
     }
 
-    if (puzzle.answer !== submitted) {
+    const correct = normalizeAnswer(puzzle.answer);
+
+    if (correct !== submitted) {
       return c.json<ErrorResponse>({ success: false, error: 'Incorrect answer. The mystery remains unsolved...' }, 400);
     }
 
@@ -951,13 +1051,14 @@ api.post('/puzzle/daily/solve', async (c) => {
     } catch {
       return c.json<ErrorResponse>({ success: false, error: 'Malformed JSON payload' }, 400);
     }
-    const submitted = String(body.answer || '').trim().toLowerCase();
+    const submitted = normalizeAnswer(body.answer);
 
     const solved = await RedisService.hasSolvedDaily(userId, todayStr);
     if (solved) return c.json<ErrorResponse>({ success: false, error: 'You have already solved today\'s daily puzzle.' }, 400);
 
     const puzzle = getDailyPuzzleForDate(todayStr);
-    if (puzzle.answer !== submitted) {
+    const correct = normalizeAnswer(puzzle.answer);
+    if (correct !== submitted) {
       return c.json<ErrorResponse>({ success: false, error: 'Incorrect answer. Try again.' }, 400);
     }
 

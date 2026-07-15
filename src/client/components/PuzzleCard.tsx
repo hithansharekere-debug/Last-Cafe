@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { Card } from './Card';
-import { Button } from './Button';
 import type { CommunityPuzzle } from '../../shared/types';
 
 interface PuzzleCardProps {
@@ -11,6 +9,8 @@ interface PuzzleCardProps {
   onSolve: (id: string, answer: string) => Promise<boolean>;
   onLike?: (() => void) | undefined;
   onFavorite?: (() => void) | undefined;
+  isOwner?: boolean;
+  onEdit?: (() => void) | undefined;
 }
 
 const TEMPLATE_ICONS: Record<string, string> = {
@@ -24,9 +24,9 @@ const TEMPLATE_ICONS: Record<string, string> = {
 };
 
 const DIFFICULTY_COLORS = {
-  Easy: { bg: '#e1ead4', text: '#4a7c59', border: '#4a7c59' },
-  Medium: { bg: '#fdfaf2', text: '#d4af37', border: '#d4af37' },
-  Hard: { bg: '#eeded1', text: '#9b4618', border: '#9b4618' },
+  Easy: { bg: '#AEB48D', border: '#98A27A', text: '#3B271C' },
+  Medium: { bg: '#F7E9D3', border: '#D9A441', text: '#3B271C' },
+  Hard: { bg: '#EEDAD0', border: '#C97464', text: '#3B271C' },
 };
 
 function formatRelativeTime(timestamp: number): string {
@@ -45,6 +45,8 @@ export const PuzzleCard = ({
   onSolve,
   onLike,
   onFavorite,
+  isOwner = false,
+  onEdit,
 }: PuzzleCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -52,8 +54,7 @@ export const PuzzleCard = ({
   const [isSolving, setIsSolving] = useState(false);
   const [solveError, setSolveError] = useState<string | null>(null);
   
-  const [tiltAngle] = useState(() => (Math.random() * 2 - 1).toFixed(2));
-  const diffStyle = DIFFICULTY_COLORS[puzzle.difficulty] || DIFFICULTY_COLORS.Easy;
+  const diffStyle = DIFFICULTY_COLORS[puzzle.difficulty as keyof typeof DIFFICULTY_COLORS] || DIFFICULTY_COLORS.Easy;
   const icon = TEMPLATE_ICONS[puzzle.category] || '🧩';
 
   const handleSolveSubmit = async (e: React.FormEvent) => {
@@ -77,111 +78,128 @@ export const PuzzleCard = ({
   };
 
   return (
-    <div
-      className="transition-all duration-300 relative"
-      style={{
-        transform: isExpanded ? 'rotate(0deg) scale(1.01)' : `rotate(${tiltAngle}deg)`,
-        zIndex: isExpanded ? 50 : 10,
-      }}
-      onMouseEnter={(e) => {
-        if (!isExpanded) {
-          e.currentTarget.style.transform = 'rotate(0deg) scale(1.015)';
-        }
-      }}
-      onMouseLeave={(e) => {
-        if (!isExpanded) {
-          e.currentTarget.style.transform = `rotate(${tiltAngle}deg)`;
-        }
-      }}
-    >
-      <Card variant="napkin" elevation="high" className="border-2 border-[#2c160a] pt-7 pb-4 px-5">
+    <div className="cozy-mystery-card-wrapper relative" style={{ zIndex: isExpanded ? 50 : 10 }}>
+      <div className="cozy-mystery-card p-6 relative">
         {/* Corkboard pin */}
         <div className="absolute top-1.5 left-1/2 -translate-x-1/2 text-sm z-10 drop-shadow-sm select-none">
           📌
         </div>
 
         {/* Top details row */}
-        <div className="flex items-center justify-between mb-2 select-none">
-          <div className="flex items-center gap-1.5">
-            <span className="text-base">{icon}</span>
-            <span className="font-serif text-[10px] font-bold text-[#2c160a]">{puzzle.category}</span>
+        <div className="flex items-center justify-between mb-4 select-none">
+          {/* Left: Category Badge & Difficulty Pill */}
+          <div className="flex items-center gap-3">
+            {/* Category Badge */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#8D6846]/30 bg-[#F7E9D3] text-[#4B3528]">
+              <span className="text-sm select-none">{icon}</span>
+              <span className="font-sans text-[12px] font-bold">{puzzle.category}</span>
+            </div>
+
+            {/* Difficulty Pill */}
             <span
-              className="font-mono text-[8px] uppercase tracking-wider px-1.5 py-0.5 rounded border-2 font-bold"
-              style={{ backgroundColor: diffStyle.bg, color: diffStyle.text, borderColor: diffStyle.border }}
+              className="font-sans text-[12px] uppercase tracking-wider px-3.5 py-1.5 rounded-full border-2 font-bold leading-none"
+              style={{
+                backgroundColor: diffStyle.bg,
+                borderColor: diffStyle.border,
+                color: diffStyle.text,
+              }}
             >
               {puzzle.difficulty}
             </span>
           </div>
-          <span className="font-mono text-[9px] text-[#5e463a] font-bold">
-            {formatRelativeTime(puzzle.createdAt)}
-          </span>
+
+          {/* Right: Created At time & Optional Edited badge */}
+          <div className="text-right flex flex-col items-end select-none">
+            <span className="font-mono text-[13px] text-[#8D6846] font-bold">
+              {formatRelativeTime(puzzle.createdAt)}
+            </span>
+            {puzzle.editCount && puzzle.editCount > 0 ? (
+              <span className="font-sans text-[10px] text-[#D9A441] italic font-bold mt-0.5" title="Last revised recently">
+                ✏️ revised
+              </span>
+            ) : null}
+          </div>
         </div>
 
-        {/* Puzzle Title */}
-        <div className="flex justify-between items-center mb-1">
-          <h3 className="font-serif font-bold text-sm text-[#2c160a]">
+        {/* Puzzle Title & Solved Checkmark */}
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-sans font-bold text-[22px] text-[#4B3528] leading-tight">
             {puzzle.title}
           </h3>
           {isSolved && (
-            <span className="bg-[#e1ead4] text-[#4a7c59] border border-[#4a7c59] font-mono text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shadow-sm select-none">
+            <span className="bg-[#AEB48D] text-[#3B271C] border-2 border-[#98A27A] font-sans text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm select-none">
               ✅ Solved
             </span>
           )}
         </div>
 
-        <p className="font-serif text-[10px] text-[#5e463a] mb-3">
-          Pinned by <strong className="text-[#2c160a]">{puzzle.creatorName}</strong> · {puzzle.solveCount || 0} Solves
+        {/* Metadata */}
+        <p className="text-[15px] text-[#8D6846] mb-4">
+          Pinned by <strong className="text-[#4B3528]">{puzzle.creatorName}</strong> · {puzzle.solveCount || 0} Solves
         </p>
 
-        {/* Toggle drawer button */}
-        <div className="mb-3">
-          <Button
-            variant={isSolved ? 'outline' : 'secondary'}
-            size="sm"
-            fullWidth
+        {/* Toggle Drawer / Solve Button & Edit Button */}
+        <div className="flex gap-2 mb-4">
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="cursor-pointer font-bold"
+            className="solve-mystery-btn"
+            style={{ flex: isOwner ? '2' : '1' }}
           >
             {isExpanded ? 'Hide Mystery ↑' : isSolved ? 'Review Puzzle' : 'Solve Mystery 💡'}
-          </Button>
+          </button>
+
+          {isOwner && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onEdit) onEdit();
+              }}
+              disabled={(puzzle.editCount || 0) >= 3}
+              className="flex-1 h-11 rounded-xl border-2 border-[#8D6846] bg-[#FBF6EE] hover:bg-[#F4E8D5]/50 text-[#4B3528] font-sans font-bold text-[13px] flex items-center justify-center gap-1.5 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              title={(puzzle.editCount || 0) >= 3 ? "Mysteries can only be revised three times to preserve the integrity of community puzzles." : "Edit this mystery"}
+            >
+              <span>✏️</span>
+              <span>Edit</span>
+            </button>
+          )}
         </div>
 
         {/* Expanded puzzle solve drawer */}
         {isExpanded && (
-          <div className="border-t border-dashed border-[#c8a285] pt-3 mt-1.5 animate-fade-in flex flex-col gap-3">
+          <div className="border-t border-dashed border-[#8D6846]/30 pt-4 mt-2 animate-fade-in flex flex-col gap-4">
             {/* Setup Context */}
             {puzzle.description && (
-              <p className="font-serif text-[11px] text-[#5e463a] italic leading-relaxed">
+              <p className="text-[18px] text-[#4B3528] italic leading-relaxed whitespace-pre-wrap">
                 {puzzle.description}
               </p>
             )}
 
             {/* Puzzle clue box */}
-            <div className="bg-[#eeded1]/40 border-2 border-[#2c160a] rounded-lg p-3.5 relative">
-              <p className="font-handwritten text-sm text-[#26140b] leading-relaxed select-text whitespace-pre-wrap">
+            <div className="bg-[#eeded1]/40 border-2 border-[#8D6846] rounded-xl p-4 relative">
+              <p className="font-sans text-[16px] text-[#4B3528] leading-relaxed select-text whitespace-pre-wrap">
                 {puzzle.puzzleText}
               </p>
             </div>
 
             {/* Solve Form / Already Solved state */}
             {isSolved ? (
-              <div className="p-3 bg-[#e1ead4] border-2 border-[#4a7c59] rounded-lg text-center font-serif text-xs text-[#2e4d37] select-none font-bold">
-                🎉 Mystery Solved! Correct answer was: <strong className="font-mono text-[#4a7c59] uppercase">{puzzle.answer}</strong>
+              <div className="p-4 bg-[#AEB48D]/20 border-2 border-[#98A27A] rounded-xl text-center text-[15px] text-[#3B271C] select-none font-bold">
+                🎉 Mystery Solved! Correct answer was: <strong className="font-mono text-[#3B271C] uppercase">{puzzle.answer}</strong>
               </div>
             ) : (
-              <form onSubmit={handleSolveSubmit} className="flex flex-col gap-3.5">
+              <form onSubmit={handleSolveSubmit} className="flex flex-col gap-4">
                 {/* Hint accordion */}
                 {puzzle.hint && (
                   <div>
                     {showHint ? (
-                      <div className="p-2.5 bg-[#fdfaf2] border-2 border-dashed border-[#c8a285] rounded-md font-serif text-[10px] text-[#5e463a] leading-normal">
+                      <div className="p-3.5 bg-[#FBF6EE] border-2 border-dashed border-[#8D6846]/40 rounded-xl text-[14px] text-[#8D6846] leading-relaxed">
                         💡 <strong>Hint:</strong> {puzzle.hint}
                       </div>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setShowHint(true)}
-                        className="font-serif text-[10px] text-[#cf7929] italic underline hover:text-[#2c160a] select-none cursor-pointer"
+                        className="text-[13px] text-[#D9A441] italic underline hover:text-[#4B3528] select-none cursor-pointer"
                       >
                         Reveal Hint...
                       </button>
@@ -199,20 +217,18 @@ export const PuzzleCard = ({
                     }}
                     placeholder="Enter answer..."
                     maxLength={50}
-                    className="flex-grow rounded-md border-2 border-[#2c160a] px-3 py-2 font-serif text-xs bg-[#fdfaf2] text-[#26140b] focus:outline-none focus:border-[#cf7929]"
+                    className="flex-grow rounded-xl border-2 border-[#8D6846] px-4 py-2 text-[14px] bg-[#FBF6EE] text-[#4B3528] focus:outline-none focus:border-[#D9A441]"
                   />
-                  <Button
+                  <button
                     type="submit"
-                    variant="primary"
-                    size="sm"
                     disabled={!userAnswer.trim() || isSolving}
-                    className="cursor-pointer font-bold"
+                    className="px-6 py-2 rounded-xl bg-[#6B4B35] text-[#FBF6EE] font-bold text-[14px] border-2 border-[#3E291E] hover:bg-[#4B3528] active:translate-y-[1px] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isSolving ? 'Submitting...' : 'Submit'}
-                  </Button>
+                  </button>
                 </div>
                 {solveError && (
-                  <p className="text-[10px] text-[#cf7929] font-serif italic text-center font-bold">
+                  <p className="text-[13px] text-[#C97464] italic text-center font-bold">
                     {solveError}
                   </p>
                 )}
@@ -222,9 +238,9 @@ export const PuzzleCard = ({
         )}
 
         {/* Footer controls row */}
-        <div className="flex items-center justify-between pt-2.5 border-t border-dashed border-[#c8a285] text-[10px] text-[#5e463a] font-serif select-none mt-1">
-          <span className="italic font-bold">The Last Cafe</span>
-          <div className="flex items-center gap-2 font-mono">
+        <div className="flex items-center justify-between pt-4 border-t border-dashed border-[#8D6846]/30 select-none mt-4">
+          <span className="italic font-bold text-[13px] text-[#8D6846]">The Last Cafe</span>
+          <div className="flex items-center gap-3">
             {onLike && (
               <button
                 onClick={(e) => {
@@ -232,13 +248,13 @@ export const PuzzleCard = ({
                   onLike();
                 }}
                 disabled={isLiked}
-                className={`flex items-center gap-1 px-2 py-1 rounded-md border-2 border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none font-bold shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none ${
-                  isLiked ? 'bg-[#eeded1] text-[#9b4618] opacity-75 shadow-none' : 'bg-transparent text-[#5e463a]'
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[#8D6846] transition-all cursor-pointer font-sans font-bold text-[13px] ${
+                  isLiked ? 'bg-[#AEB48D]/20 text-[#3B271C] border-[#98A27A]' : 'bg-[#FBF6EE] text-[#4B3528] hover:bg-[#F4E8D5]/50'
                 }`}
                 title={isLiked ? "Liked" : "Like puzzle"}
               >
                 <span>{isLiked ? '❤️' : '🤍'}</span>
-                <span>{puzzle.likes || 0}</span>
+                <span>{puzzle.likes || 0} Likes</span>
               </button>
             )}
 
@@ -248,18 +264,18 @@ export const PuzzleCard = ({
                   e.stopPropagation();
                   onFavorite();
                 }}
-                className={`flex items-center justify-center rounded-md border-2 border-[#2c160a] hover:bg-[#eeded1] transition-colors cursor-pointer select-none shadow-[1.5px_1.5px_0px_#2c160a] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none ${
-                  isFavorited ? 'bg-[#eeded1] text-[#cf7929]' : 'bg-transparent text-[#5e463a]'
+                className={`flex items-center gap-2 px-4 py-2 rounded-full border-2 border-[#8D6846] transition-all cursor-pointer font-sans font-bold text-[13px] ${
+                  isFavorited ? 'bg-[#AEB48D]/20 text-[#3B271C] border-[#98A27A]' : 'bg-[#FBF6EE] text-[#4B3528] hover:bg-[#F4E8D5]/50'
                 }`}
-                style={{ width: '26px', height: '26px', padding: 0 }}
                 title={isFavorited ? "Remove from Favorites" : "Add to Favorites"}
               >
                 <span className="text-xs">{isFavorited ? '★' : '☆'}</span>
+                <span>{isFavorited ? 'Bookmarked' : 'Bookmark'}</span>
               </button>
             )}
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

@@ -20,14 +20,14 @@ export const ProgressBar = ({
   return (
     <div className="flex flex-col w-full gap-2 select-none font-sans">
       {/* Label and percentage info */}
-      <div className="flex justify-between items-center w-full text-xs">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center w-full gap-2 sm:gap-4 text-xs">
         {label && (
-          <span className="font-sans font-bold text-xs uppercase tracking-wider text-[var(--color-dark-walnut)]">
+          <span className="font-sans font-bold text-[12px] uppercase tracking-wider text-[var(--color-dark-walnut)]">
             {label}
           </span>
         )}
         {showPercent && (
-          <span className="font-mono text-xs text-[var(--color-dark-walnut)] font-bold bg-[var(--color-cream)] px-2.5 py-1 rounded border border-[var(--color-border-dark)] shadow-[0_2px_0px_var(--color-border-dark)]">
+          <span className="font-mono text-[12px] text-[var(--color-dark-walnut)] font-bold bg-[var(--color-cream)] px-2.5 py-1 rounded border border-[var(--color-border-dark)] shadow-[0_2px_0px_var(--color-border-dark)] self-start sm:self-auto">
             {value} / {max} ({percentage}%)
           </span>
         )}

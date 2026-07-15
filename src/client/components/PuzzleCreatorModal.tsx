@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './Button';
 import { Modal, ModalBody, ModalFooter } from './Modal';
 import { Label, Input, Textarea, Select } from './Form';
 import { PUZZLE_CATEGORIES } from '../../shared/constants';
 import type { PuzzleCategory } from '../../shared/constants';
+import type { CommunityPuzzle } from '../../shared/types';
 
 interface PuzzleCreatorModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ interface PuzzleCreatorModalProps {
     difficulty: 'Easy' | 'Medium' | 'Hard';
     category: PuzzleCategory;
   }) => Promise<boolean>;
+  editPuzzleData?: CommunityPuzzle | null;
+  onEditPuzzle?: (id: string, puzzleData: any) => Promise<boolean>;
 }
 
 const CATEGORY_DETAILS = [
@@ -35,6 +38,8 @@ export const PuzzleCreatorModal = ({
   onClose,
   currentTokens,
   onPublishPuzzle,
+  editPuzzleData = null,
+  onEditPuzzle,
 }: PuzzleCreatorModalProps) => {
   const [category, setCategory] = useState<PuzzleCategory>(PUZZLE_CATEGORIES.RIDDLE);
   const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
@@ -58,9 +63,32 @@ export const PuzzleCreatorModal = ({
     setDifficulty('Easy');
   };
 
+  useEffect(() => {
+    if (isOpen) {
+      if (editPuzzleData) {
+        setTitle(editPuzzleData.title);
+        setDescription(editPuzzleData.description || '');
+        setPuzzleText(editPuzzleData.puzzleText);
+        setHint(editPuzzleData.hint || '');
+        setAnswer(editPuzzleData.answer);
+        setDifficulty(editPuzzleData.difficulty);
+        setCategory(editPuzzleData.category);
+      } else {
+        resetForm();
+      }
+      setErrorMessage(null);
+      setSuccessMessage(null);
+    }
+  }, [isOpen, editPuzzleData]);
+
   const handleSubmit = async () => {
-    if (!title.trim() || !puzzleText.trim() || !answer.trim() || currentTokens <= 0) {
+    if (!title.trim() || !puzzleText.trim() || !answer.trim()) {
       setErrorMessage('Please fill in all required fields (Title, Clue, and Answer).');
+      return;
+    }
+
+    if (!editPuzzleData && currentTokens <= 0) {
+      setErrorMessage('Insufficient coffee tokens. Claim daily coffee first.');
       return;
     }
     
@@ -68,26 +96,49 @@ export const PuzzleCreatorModal = ({
     setErrorMessage(null);
 
     try {
-      const success = await onPublishPuzzle({
-        title: title.trim(),
-        description: description.trim(),
-        puzzleText: puzzleText.trim(),
-        hint: hint.trim(),
-        answer: answer.trim().toLowerCase(),
-        difficulty,
-        category,
-      });
+      if (editPuzzleData) {
+        if (!onEditPuzzle) throw new Error('Edit handler not configured');
+        const success = await onEditPuzzle(editPuzzleData.id, {
+          title: title.trim(),
+          description: description.trim(),
+          puzzleText: puzzleText.trim(),
+          hint: hint.trim(),
+          answer: answer.trim().toLowerCase(),
+          difficulty,
+        });
 
-      if (success) {
-        setSuccessMessage('Noisy typewriter → Puzzle published on board.');
-        resetForm();
-        setTimeout(() => {
-          onClose();
-          setSuccessMessage(null);
-        }, 2200);
+        if (success) {
+          setSuccessMessage('Noisy typewriter → Puzzle edits saved.');
+          setTimeout(() => {
+            onClose();
+            setSuccessMessage(null);
+          }, 2200);
+        } else {
+          setErrorMessage('Failed to save mystery edits. Try again.');
+          setTimeout(() => setErrorMessage(null), 4000);
+        }
       } else {
-        setErrorMessage('Failed to publish your mystery. Try again.');
-        setTimeout(() => setErrorMessage(null), 4000);
+        const success = await onPublishPuzzle({
+          title: title.trim(),
+          description: description.trim(),
+          puzzleText: puzzleText.trim(),
+          hint: hint.trim(),
+          answer: answer.trim().toLowerCase(),
+          difficulty,
+          category,
+        });
+
+        if (success) {
+          setSuccessMessage('Noisy typewriter → Puzzle published on board.');
+          resetForm();
+          setTimeout(() => {
+            onClose();
+            setSuccessMessage(null);
+          }, 2200);
+        } else {
+          setErrorMessage('Failed to publish your mystery. Try again.');
+          setTimeout(() => setErrorMessage(null), 4000);
+        }
       }
     } catch {
       setErrorMessage('Failed to connect to the cafe board.');
@@ -113,32 +164,38 @@ export const PuzzleCreatorModal = ({
         return "The Last ___ on the Internet (hint: coffee shop)";
       case PUZZLE_CATEGORIES.HIDDEN_WORD:
       default:
-        return "Find the hidden name: 'Behind the old COUNTER lives a cat named...'";
+        return "Find the hidden name: 'Behind the old COUNTER lives a cat coffee bar...'";
     }
   };
 
-  const isFormValid = title.trim().length > 0 && puzzleText.trim().length > 0 && answer.trim().length > 0 && currentTokens > 0;
+  const isFormValid = title.trim().length > 0 && puzzleText.trim().length > 0 && answer.trim().length > 0 && (!!editPuzzleData || currentTokens > 0);
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="✏️ Create a Community Mystery"
+      title={editPuzzleData ? '✏️ Edit Your Mystery' : '✏️ Create a Community Mystery'}
       size="lg"
     >
       {successMessage ? (
         <ModalBody className="flex flex-col items-center justify-center gap-md py-16 text-center animate-fade-in">
           <span className="text-6xl animate-bounce select-none">🧩</span>
-          <p className="font-serif text-sm font-bold text-[#2c160a] leading-relaxed">
+          <p className="font-sans text-sm font-bold text-[#2c160a] leading-relaxed">
             {successMessage}
           </p>
         </ModalBody>
       ) : (
         <>
           <ModalBody className="flex flex-col gap-md">
-            <p className="text-xs text-[#5e463a] italic leading-relaxed select-none">
-              Leave tomorrow's visitors a cozy puzzle to solve. Fill in the fields below.
-            </p>
+            {editPuzzleData ? (
+              <div className="p-3 bg-[#eeded1]/40 border border-[#8D6846]/20 rounded-lg text-center font-sans text-xs text-[#8D6846] font-bold">
+                Edits Remaining: {3 - (editPuzzleData.editCount || 0)}/3
+              </div>
+            ) : (
+              <p className="text-xs text-[#5e463a] italic leading-relaxed select-none">
+                Leave tomorrow\'s visitors a cozy puzzle to solve. Fill in the fields below.
+              </p>
+            )}
 
             <div className="flex flex-col gap-md">
               {/* 1. Puzzle Type */}
@@ -148,6 +205,7 @@ export const PuzzleCreatorModal = ({
                   id="puzzle-type-select"
                   value={category}
                   onChange={(e) => setCategory(e.target.value as any)}
+                  disabled={!!editPuzzleData}
                 >
                   {CATEGORY_DETAILS.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -250,7 +308,7 @@ export const PuzzleCreatorModal = ({
                         key={diff}
                         type="button"
                         onClick={() => setDifficulty(diff)}
-                        className={`flex-1 h-11 rounded-md border-2 border-[#2c160a] font-serif text-xs font-bold text-center cursor-pointer transition-all duration-150 shadow-[2px_2px_0px_#2c160a] active:translate-y-0.5 active:shadow-none ${
+                        className={`flex-1 h-11 rounded-md border-2 border-[#2c160a] font-sans text-xs font-bold text-center cursor-pointer transition-all duration-150 shadow-[2px_2px_0px_#2c160a] active:translate-y-0.5 active:shadow-none ${
                           active
                             ? 'bg-[#cf7929] text-[#fdfaf2] translate-y-0.5 shadow-none'
                             : 'bg-[#eeded1] text-[#2c160a]'
@@ -267,17 +325,18 @@ export const PuzzleCreatorModal = ({
 
           {/* FIXED FOOTER */}
           <ModalFooter className="flex-col gap-md">
-            {/* Coffee cost card */}
-            <div className="w-full py-2 px-md bg-[#eeded1] border-2 border-[#c8a285] rounded-md flex flex-wrap items-center justify-center gap-sm font-serif text-xs text-[#2c160a] font-bold text-center">
-              <span>☕</span>
-              <span>Publishing this mystery costs 1 Coffee Token.</span>
-              <span className="font-mono text-[10px] bg-[#cf7929] text-[#fdfaf2] px-2 py-0.5 rounded-md font-bold ml-1">
-                Holdings: {currentTokens}
-              </span>
-            </div>
+            {!editPuzzleData && (
+              <div className="w-full py-2 px-md bg-[#eeded1] border-2 border-[#c8a285] rounded-md flex flex-wrap items-center justify-center gap-sm font-sans text-xs text-[#2c160a] font-bold text-center">
+                <span>☕</span>
+                <span>Publishing this mystery costs 1 Coffee Token.</span>
+                <span className="font-mono text-[10px] bg-[#cf7929] text-[#fdfaf2] px-2 py-0.5 rounded-md font-bold ml-1">
+                  Holdings: {currentTokens}
+                </span>
+              </div>
+            )}
 
             {errorMessage && (
-              <p className="text-xs text-[#cf7929] font-serif italic text-center font-bold">
+              <p className="text-xs text-[#cf7929] font-sans italic text-center font-bold">
                 {errorMessage}
               </p>
             )}
@@ -299,7 +358,7 @@ export const PuzzleCreatorModal = ({
                 disabled={!isFormValid || isSubmitting}
                 onClick={handleSubmit}
               >
-                {isSubmitting ? 'Publishing...' : 'Publish Mystery'}
+                {isSubmitting ? (editPuzzleData ? 'Saving...' : 'Publishing...') : (editPuzzleData ? 'Save Changes' : 'Publish Mystery')}
               </Button>
             </div>
           </ModalFooter>

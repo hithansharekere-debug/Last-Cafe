@@ -94,22 +94,26 @@ export const CafeScreen = ({
       <PageContainer>
         {/* Cafe Header & Hub Information */}
         <div
-          className="flex flex-col p-lg rounded-lg border-2 border-[var(--color-border-dark)] shadow-[4px_4px_0px_var(--color-border-dark)] shrink-0"
+          className="flex flex-col hero-header-card rounded-lg border-2 border-[var(--color-border-dark)] shadow-[4px_4px_0px_var(--color-border-dark)] shrink-0"
           style={{
             backgroundColor: 'var(--color-cream)',
             backgroundImage: 'radial-gradient(var(--color-paper-shadow) 1px, transparent 1px)',
             backgroundSize: '16px 16px',
           }}
         >
-          <div className="flex justify-between items-center gap-lg mb-3">
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', whiteSpace: 'nowrap', marginBottom: '8px' }}>
-                <span style={{ fontSize: '26px', lineHeight: 1 }} className="select-none">☕</span>
-                <PageTitle>The Cozy Cafe</PageTitle>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-lg mb-3 w-full">
+            <div className="min-w-0 flex-1 w-full">
+              <div className="flex items-center gap-3 mb-2 flex-wrap w-full">
+                <span className="text-[26px] select-none leading-none shrink-0">☕</span>
+                <div className="min-w-0 flex-1">
+                  <PageTitle>The Cozy Cafe</PageTitle>
+                </div>
               </div>
-              <Caption className="italic block" style={{ margin: '0 0 12px 0' }}>Pull up a chair. Stay a while.</Caption>
+              <p className="font-sans italic text-sm sm:text-base text-[var(--color-espresso)] block" style={{ margin: '0 0 12px 0' }}>
+                Pull up a chair. Stay a while.
+              </p>
             </div>
-            <div className="text-right select-none shrink-0">
+            <div className="text-right select-none shrink-0 self-start sm:self-center">
               <span className="font-sans text-xs bg-[var(--color-border-dark)] text-[var(--color-text-light)] px-3 py-1.5 rounded-lg border-2 border-[var(--color-border-dark)] shadow-[0_3px_0px_var(--color-caramel)] font-bold">
                 Tokens: {currentTokens}
               </span>
@@ -117,7 +121,7 @@ export const CafeScreen = ({
           </div>
 
           {/* Global Progress toward unlocking rooms */}
-          <div className="mt-7">
+          <div className="mt-5 sm:mt-7">
             <ProgressBar
               value={cafe.totalWarmth}
               max={nextThreshold}
@@ -219,8 +223,8 @@ export const CafeScreen = ({
         </div>
 
         {/* Recent Contributions Section */}
-        <div className="flex flex-col gap-md">
-          <SectionTitle className="flex items-center gap-2 px-1">
+        <Card variant="parchment" elevation="low" className="p-5 border-2 border-[var(--color-border-dark)] flex flex-col gap-4 mt-6">
+          <SectionTitle className="flex items-center gap-2" style={{ fontSize: '18px', margin: 0 }}>
             <span>📜</span> Recent Contributions
           </SectionTitle>
 
@@ -241,30 +245,28 @@ export const CafeScreen = ({
               )}
             </div>
           ) : (
-            <div className="flex flex-col gap-md">
+            <div className="flex flex-col gap-4">
               {contributions.slice(0, 3).map((contrib) => (
-                <Card
+                <div
                   key={contrib.id}
-                  variant="parchment"
-                  elevation="low"
-                  className="p-lg hover:scale-[1.005]"
+                  className="p-4 bg-[#FBF6EE] rounded-[18px] border-2 border-[#8D6846] shadow-sm hover:scale-[1.005] transition-transform"
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[var(--color-cream)] text-[var(--color-dark-walnut)] border border-[var(--color-border-dark)] select-none font-bold">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-mono text-[9px] uppercase tracking-widest px-1.5 py-0.5 rounded bg-[#F4E8D5] text-[#4B3528] border border-[#8D6846] select-none font-bold">
                       {contrib.category}
                     </span>
-                    <Caption className="italic">
+                    <span className="italic text-[13px] text-[#8D6846]">
                       — {contrib.username}
-                    </Caption>
+                    </span>
                   </div>
-                  <BodyText className="font-handwritten text-[var(--color-espresso)]">
+                  <p className="font-handwritten text-[16px] text-[#4B3528] leading-relaxed">
                     "{contrib.message || contrib.text}"
-                  </BodyText>
-                </Card>
+                  </p>
+                </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </PageContainer>
     </div>
   );

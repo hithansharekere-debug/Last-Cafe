@@ -48,6 +48,8 @@ const AppContent = () => {
     puzzles,
     fetchPuzzles,
     publishPuzzle,
+    editPuzzle,
+    deletePuzzle,
     solvePuzzle,
     likePuzzle,
     favoritePuzzle,
@@ -56,6 +58,7 @@ const AppContent = () => {
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
   const [isNoteComposerOpen, setIsNoteComposerOpen] = useState(false);
+  const [editingPuzzle, setEditingPuzzle] = useState<any | null>(null);
   const [discoverFilter, setDiscoverFilter] = useState('All');
 
   // Toast State
@@ -187,6 +190,19 @@ const AppContent = () => {
     return success;
   }, [publishPuzzle, currentScreen, discoverFilter, fetchPuzzles, showToast]);
 
+  const handleEditPuzzle = useCallback(async (id: string, puzzleData: any) => {
+    const success = await editPuzzle(id, puzzleData);
+    if (success) {
+      showToast('Mystery revised successfully! ✏️', 'success');
+      if (currentScreen === 'discover') {
+        void fetchPuzzles(discoverFilter);
+      } else {
+        void fetchPuzzles('All');
+      }
+    }
+    return success;
+  }, [editPuzzle, currentScreen, discoverFilter, fetchPuzzles, showToast]);
+
   const handleSolvePuzzle = useCallback(async (id: string, answer: string) => {
     const success = await solvePuzzle(id, answer);
     if (success) {
@@ -208,6 +224,18 @@ const AppContent = () => {
       showToast('Toggled favorite! ⭐', 'success');
     }
   }, [favoritePuzzle, showToast]);
+
+  const handleDeletePuzzle = useCallback(async (id: string) => {
+    const success = await deletePuzzle(id);
+    if (success) {
+      showToast('Mystery deleted successfully. 🗑️', 'success');
+      if (currentScreen === 'discover') {
+        void fetchPuzzles(discoverFilter);
+      } else {
+        void fetchPuzzles('All');
+      }
+    }
+  }, [deletePuzzle, currentScreen, discoverFilter, fetchPuzzles, showToast]);
 
   const handleSolveDaily = useCallback(async (answer: string) => {
     const res = await solveDaily(answer);
@@ -245,13 +273,18 @@ const AppContent = () => {
         return (
           <CommunityTableScreen
             user={user}
-            puzzles={puzzles}
-            loading={false}
-            onFetchPuzzles={handleFetchAllPuzzles}
-            onOpenComposer={handleOpenComposer}
-            onSolvePuzzle={handleSolvePuzzle}
-            onLikePuzzle={handleLikePuzzle}
-            onFavoritePuzzle={handleFavoritePuzzle}
+            contributions={contributions}
+            loading={loading}
+            onFetchContributions={fetchContributions}
+            onOpenComposer={handleOpenNoteComposer}
+            onLikeNote={(id) => {
+              void likeNote(id).then((res) => {
+                if (res.success && res.unlockedAchievements && res.unlockedAchievements.length > 0) {
+                  const names = res.unlockedAchievements.join(', ');
+                  showToast(`🏆 Achievement unlocked: ${names}!`);
+                }
+              });
+            }}
           />
         );
       case 'discover':
@@ -266,6 +299,9 @@ const AppContent = () => {
             onSolvePuzzle={handleSolvePuzzle}
             onLikePuzzle={handleLikePuzzle}
             onFavoritePuzzle={handleFavoritePuzzle}
+            onEditPuzzle={(puzzle) => setEditingPuzzle(puzzle)}
+            onDeletePuzzle={handleDeletePuzzle}
+            onOpenComposer={handleOpenComposer}
           />
         );
       case 'puzzle':
@@ -298,10 +334,15 @@ const AppContent = () => {
           </main>
 
           <PuzzleCreatorModal
-            isOpen={isComposerOpen}
-            onClose={() => setIsComposerOpen(false)}
+            isOpen={isComposerOpen || !!editingPuzzle}
+            onClose={() => {
+              setIsComposerOpen(false);
+              setEditingPuzzle(null);
+            }}
             currentTokens={user?.currentCoffeeTokens ?? 0}
             onPublishPuzzle={handlePublishPuzzle}
+            editPuzzleData={editingPuzzle}
+            onEditPuzzle={handleEditPuzzle}
           />
 
           <NoteComposerModal
