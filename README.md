@@ -51,7 +51,7 @@ Rather than building another game, we wanted to build a digital place people wou
 
 ## Core Idea
 
-Every visitor receives one Coffee Token each day.
+Every visitor receives one Coffee Token each day
 
 That token can be spent to leave something behind:
 
