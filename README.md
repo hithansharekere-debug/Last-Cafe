@@ -4,7 +4,7 @@
 
 ---
 
-## Overview
+## Overview of the project
 
 The Last Cafe on the Internet is a community-driven social experience built on Reddit's Devvit Interactive Posts platform.
 
