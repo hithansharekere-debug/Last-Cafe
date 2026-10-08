@@ -78,7 +78,7 @@ The café becomes a living archive built entirely by its visitors.
 
 ---
 
-## Features
+## Features in the gane
 
 ### Daily Coffee
 
