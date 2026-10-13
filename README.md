@@ -148,7 +148,7 @@ Leaderboards encourage friendly competition.
 
 ---
 
-### Library
+### Library in the Game
 
 The player's personal profile.
 
