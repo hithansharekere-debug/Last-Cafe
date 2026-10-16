@@ -49,7 +49,7 @@ Rather than building another game, we wanted to build a digital place people wou
 
 ---
 
-## Core Idea
+## Core Idea of the game
 
 Every visitor receives one Coffee Token each day
 
