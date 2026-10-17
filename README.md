@@ -20,7 +20,7 @@ Every contribution becomes part of the café forever.
 
 ---
 
-## Demo
+## Demo Video and App
 
 Demo Video:
 https://youtu.be/rc3RmQxL-oA?si=i8qly7sYt4FJcju_
