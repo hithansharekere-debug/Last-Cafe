@@ -118,7 +118,7 @@ Authors can edit their own mystery up to three times after publishing.
 
 ---
 
-### Discover
+### Discover other things in the game
 
 Browse all community-created content including:
 
