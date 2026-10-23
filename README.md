@@ -78,7 +78,7 @@ The café becomes a living archive built entirely by its visitors.
 
 ---
 
-## Features in the gane
+## Features 
 
 ### Daily Coffee
 
@@ -88,7 +88,7 @@ Coffee Tokens are the main currency used to contribute to the café.
 
 ---
 
-### Community Notes
+### Community Notes 
 
 Visitors can leave notes under different categories including:
 
